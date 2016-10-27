@@ -1,0 +1,76 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+
+\renewcommand{\theenumi}{(\alph{enumi})}
+\renewcommand{\theenumii}{\roman{enumii}}
+
+\newcommand{\xor}{\oplus}
+\renewcommand{\Pr}[1]{\ensuremath{\mathrm{Pr} \left[ {#1} \right]}}
+
+\title{Homework 1}
+\author{Michele Laurenti - 1603064}
+
+\begin{document}
+
+\maketitle
+
+\section{Perfect Secrecy and One-Time Pad}
+
+\begin{enumerate}
+	\item The encryption scheme would not be perfectly secure, since $\Pr{M=m | C=m} = 0$ for any $m$, in contradiction with the definition of perfect secrecy.
+
+	\item Perfect secrecy means that for any message $m$ $\Pr{M=m} = \Pr{M=m|C=c}$.
+		Thus, if the distribution $M$ is such that for some $m, m'$ $\Pr{M=m} \neq \Pr{M=m'}$, we'd have that $\Pr{M=m|C=c} \neq \Pr{M=m'|C=c}$.
+
+	\item Since the adversary is given $m$ and $\phi$ in this setting, the adversary could access $k = m \xor \phi$, and thus compute, for any $m'$, $\phi' = m \xor k$.
+\end{enumerate}
+
+\section{Universal Hashing}
+
+\begin{enumerate}
+	\item prova
+
+	\item prova
+\end{enumerate}
+
+\section{One-Way Functions}
+
+\begin{enumerate}
+	\item prova
+
+	\item prova
+		\begin{enumerate}
+			\item prova
+			\item prova
+			\item prova
+			\item prova
+		\end{enumerate}
+\end{enumerate}
+
+\section{Pseudorandom Generators}
+
+\begin{enumerate}
+	\item prova
+
+	\item prova
+		\begin{enumerate}
+			\item prova
+			\item prova
+		\end{enumerate}
+\end{enumerate}
+
+\section{Pseudorandom Functions}
+
+\begin{enumerate}
+	\item prova
+	\item prova
+	\item prova
+\end{enumerate}
+
+\section{Secret-Key Encryption}
+
+Prova.
+
+\end{document}
+
