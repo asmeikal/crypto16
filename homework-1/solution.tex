@@ -69,12 +69,15 @@
 \section{Pseudorandom Generators}
 
 \begin{enumerate}
-	\item prova
+	\item The exponential time distinguisher could ask for $2^{2\lambda}$ strings (of length $2\lambda$) to the unknown generator.
+		The set of strings that a PRG outputs has size at most $2^{\lambda}$, i.e.\ if the distinguisher is querying a PRG it wouldn't get more than $2^{\lambda}$ different strings.
+		This happens only with a very low probability when querying a uniform distribution of strings of length $2\lambda$.
+		Thus the exponential-time distinguisher could ask for exponentially many strings: if the set of obtained strings has more than $2^{\lambda}$ strings, then with probability 1 the distinguisher is dealing with a uniform distribution of strings of length $2\lambda$; otherwise, with probability almost 1 it's dealing with a PRG.
 
 	\item
 		\begin{enumerate}
 			\item This is a PRG.
-				Without loss of generality, consider $G'(s_1 || s_2) = G(s_1) || G(s_2)$ (the argument can be extended to the general case) with $G : \{0,1\}^{\lambda} \to \{0,1\}^{\lambda + l}$ being a PRG (thus $G' : \{0,1\}^{2\lambda} \to \{0,1\}^{2\lambda + 2l}$)
+				Without loss of generality, consider $G'(s_1 || s_2) = G(s_1) || G(s_2)$ (the argument can be extended to the general case) with $G : \{0,1\}^{\lambda} \to \{0,1\}^{\lambda + l}$ being a PRG (thus $G' : \{0,1\}^{2\lambda} \to \{0,1\}^{2\lambda + 2l}$).
 				If an adversary could distinguish $G'$ from a distribution $U_{2\lambda + 2l}$, we could create an adversary distinguishing $G$ from a distribution $U_{\lambda + l}$.
 				This adversary would take two strings from the unknown distribution, contatenate them, and give them to the distinguisher of $G'$, repeating as needed, and then output the same as the distinguisher.
 			\item This is not a PRG.
