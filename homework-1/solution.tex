@@ -1,12 +1,25 @@
 \documentclass{article}
 
 \usepackage{amsmath}
+\usepackage{fullpage}
 
-\renewcommand{\theenumi}{(\alph{enumi})}
+\renewcommand{\theenumi}{\alph{enumi}}
 \renewcommand{\theenumii}{\roman{enumii}}
+
+\newcommand{\distinguisher}{\mathcal{D}}
+\newcommand{\adversary}{\mathcal{A}}
+\newcommand{\messages}{\mathcal{M}}
+\newcommand{\hash}{\mathcal{H}}
+\newcommand{\prf}{\mathcal{F}}
+\newcommand{\authenticators}{\Phi}
+
+\newcommand{\compind}{\approx_c}
 
 \newcommand{\xor}{\oplus}
 \renewcommand{\Pr}[1]{\ensuremath{\mathrm{Pr} \left[ {#1} \right]}}
+\newcommand{\abs}[1]{\left| {#1} \right|}
+\newcommand{\floor}[1]{\left\lfloor {#1} \right\rfloor}
+\newcommand{\ceil}[1]{\left\lceil {#1} \right\rceil}
 
 \title{Homework 1}
 \author{Michele Laurenti - 1603064}
@@ -18,18 +31,20 @@
 \section{Perfect Secrecy and One-Time Pad}
 
 \begin{enumerate}
-	\item The encryption scheme would not be perfectly secure, since $\Pr{M=m | C=m} = 0$ for any $m$, in contradiction with the definition of perfect secrecy.
+	\item The encryption scheme would not be perfectly secure, since $\Pr{M=m | C=m} = 0$ for any $m$, in contradiction with the definition of perfect secrecy, which states that $\Pr{M=m|C=c}=\Pr{M=m}$ (we'd have that all messages have probability 0, which does not make sense in a discrete setting - i.e.\ $\messages$ finite).
 
 	\item Perfect secrecy means that for any message $m$ $\Pr{M=m} = \Pr{M=m|C=c}$.
-		Thus, if the distribution $M$ is such that for some $m, m'$ $\Pr{M=m} \neq \Pr{M=m'}$, we'd have that $\Pr{M=m|C=c} \neq \Pr{M=m'|C=c}$.
+		Consider a distribution $M$ for which exist two distinct messages $m, m'$ such that $\Pr{M=m} \neq \Pr{M=m'}$.
+		This implies, using the definition of perfect secrecy, that $\Pr{M=m | C=c} = \Pr{M=m} \neq \Pr{M=m'} = \Pr{M=m' | C=c}$, which contradicts the statement.
 
-	\item Since the adversary is given $m$ and $\phi$ in this setting, the adversary could access $k = m \xor \phi$, and thus compute, for any $m'$, $\phi' = m \xor k$.
+	\item Since the adversary is given $m$ and $\phi$ in the MAC setting, the adversary could access $k = m \xor \phi$, and thus compute, for any $m'$, $\phi' = m \xor k$, which is always authenticated with key $k$.
+		This is not statistically secure, since the adversary produces a valid message and validator pair with probability 1 (1-statistical security is just no security).
 \end{enumerate}
 
 \section{Universal Hashing}
 
 \begin{enumerate}
-	\item prova
+	\item A family $\hash$ is pairwise independent if for all two distinct messages $m, m'$ the couple $(h_k(m), h_k(m')) \in \Phi^2$ is uniform over the (random) choice of $k$.
 
 	\item prova
 \end{enumerate}
@@ -39,10 +54,13 @@
 \begin{enumerate}
 	\item prova
 
-	\item prova
+	\item
 		\begin{enumerate}
-			\item prova
-			\item prova
+			\item This is not a one way function: given $z = f(x,y)$ the adversary could compute $z_1 || z_2$, with $\abs{z_1} = \abs{z_2} = n$ (assuming $f : \{0,1\}^{2n} \to \{0,1\}^{2n}$), by taking $z_1 = \floor{\frac{z}{2}}$ and $z_2 = \ceil{\frac{z}{2}}$, interpreting $z, z_1, z_2$ as binary encodings of natural numbers.
+			\item This is a one way function: assume $\distinguisher$ breaks $g$, we can then build $\distinguisher'$ which breaks $f$.
+				$\distinguisher'$ receives $y = f(x_1)$ for some $x_1$, creates a $x_2$ and gives the message $y || x_2$ to $\distinguisher$.
+				Then $\distinguisher$ outputs $x' = x'_1 || x'_2$ (with $x'_2 = x_2$) with non-negligible probability.
+				Since $g(x') = f(x'_1) || x'_2$, $\distinguisher'$ can break $f$ using $x'_1$.
 			\item prova
 			\item prova
 		\end{enumerate}
@@ -53,19 +71,67 @@
 \begin{enumerate}
 	\item prova
 
-	\item prova
+	\item
 		\begin{enumerate}
-			\item prova
-			\item prova
+			\item This is a PRG.
+				Without loss of generality, consider $G'(s_1 || s_2) = G(s_1) || G(s_2)$ (the argument can be extended to the general case) with $G : \{0,1\}^{\lambda} \to \{0,1\}^{\lambda + l}$ being a PRG (thus $G' : \{0,1\}^{2\lambda} \to \{0,1\}^{2\lambda + 2l}$)
+				If an adversary could distinguish $G'$ from a distribution $U_{2\lambda + 2l}$, we could create an adversary distinguishing $G$ from a distribution $U_{\lambda + l}$.
+				This adversary would take two strings from the unknown distribution, contatenate them, and give them to the distinguisher of $G'$, repeating as needed, and then output the same as the distinguisher.
+			\item This is not a PRG.
+				As the hints says, the proposed construction does not work for all PRG.
+				The function $G(s_1 || s_2) = \hat{G}(s_2)$ is a PRG if $\hat{G}$ is a PRG (with $\abs{s_1} = \abs{s_2} = \lambda$).
+				This follows from the fact that a uniform distribution of strings of length $\lambda$ is indistinguishable from the uniform distribution of strings of length $2\lambda$ after discarding the first half of the string.
+				Thus, if $f$ is the function that discards the first half of its input,
+				\[
+					\hat{G}(U_{\lambda}) \compind U_{\lambda} \compind f(U_{2\lambda}) \compind \hat{G}(f(U_{2\lambda})) \compind G(U_{2\lambda})
+				\]
+				The proposed construction of $G'$ is a constant function when built from $G$, thus it's not a PRG.
 		\end{enumerate}
 \end{enumerate}
 
 \section{Pseudorandom Functions}
 
 \begin{enumerate}
-	\item prova
-	\item prova
-	\item prova
+	\item This is not a pseudo-random function.
+		An adversary could query the unknown function $f$ for the values $f(x_1), f(x_2)$ of two distinct $x_1, x_2$, and then check wether $f(x_1) \xor f(x_2) = x_1 \xor x_2$.
+		If it's not the case, then the function is a random function with probability 1.
+		If that is the case, with probability almost 1 the function is the PRF.
+	\item This is not always a PRF.
+		Consider a PRF family $\prf$, and the PRF family $\prf'$ obtained from $\prf$ by chosing a key $k_1$ and by replacing $F_{k_1}$ with the identity function (i.e.\ $F_{k_1}(x) = x$ in $\prf'$).
+		$\prf'$ is still a PRF, since if keys are chosen uniformly, the key $k_1$ is chosen with probability $2^{-\lambda}$ (with key space $\{0,1\}^{\lambda}$).
+		The probability of an adversary of distinguishing $\prf'$ from a true random function is
+		\begin{align*}
+			\abs{\Pr{\adversary(G_{\prf'}(\lambda)) = 1} - \Pr{\adversary(G_{rnd}(\lambda))=1}} & = \\
+			\abs{\Pr{\adversary(G_{\prf'}(\lambda)) = 1 | k = k_1 } + \Pr{\adversary(G_{\prf'}(\lambda)) = 1 | k \neq k_1} - \Pr{\adversary(G_{rnd}(\lambda))=1}} & \le \\
+			\abs{\Pr{\adversary(G_{\prf'}(\lambda)) = 1 | k = k_1 }} + \abs{\Pr{\adversary(G_{\prf'}(\lambda)) = 1 | k \neq k_1} - \Pr{\adversary(G_{rnd}(\lambda))=1}} & = \\
+			\abs{\Pr{\adversary(G_{\prf'}(\lambda)) = 1 \land k = k_1 } \Pr{k = k_1}} & + \\
+			\abs{\Pr{\adversary(G_{\prf'}(\lambda)) = 1 \land k \neq k_1}\Pr{k \neq k_1} - \Pr{\adversary(G_{rnd}(\lambda))=1}} & \le \\
+			\abs{1 \cdot 2^{-\lambda}} + \abs{\Pr{\adversary(G_{\prf}(\lambda)) = 1} \frac{2^{\lambda}-1}{2^{\lambda}} - \Pr{\adversary(G_{rnd}(\lambda))=1}} & \le \\
+			2^{-\lambda} +
+			\abs{\Pr{\adversary(G_{\prf}(\lambda)) = 1} - \Pr{\adversary(G_{rnd}(\lambda))=1}} &
+		\end{align*}
+		We first split the probability in the PRF game using conditional probabilities.
+		The inequality then follows from the triangular inequality of the absolute value.
+		Then we apply the definition of conditional probabilities.
+		For the following step, we assume that the adversary can break with probability 1 the PRF when it's the identity function, and notice that $\prf'$ behaves just like $\prf$ when $k \neq k_1$.
+		For the last inequality, we rely on $\frac{2^{\lambda}-1}{2^{\lambda}} \le 1$.
+		What we obtain in the end is the sum of two negligibles (by assumption that $\prf$ is a PRF), thus $\prf'$ is a PRF.
+
+		Knowing this, the proposed PRF can be broken easily when it's built from $\prf'$.
+		Assume the adversary is playing against an unknown function $f$, which could be the proposed PRF with key $k$ or a random function.
+		The adversary can give $k_1$ as input, obtaining a certain $y$ as output, and then check wether the following queries $x_1, \dots, x_n$ give as output $F_{x_1}(y), \dots, F_{x_n}(y)$.
+		If that is not the case, then with probability 1 the adversary is dealing with a random function.
+		Otherwise, with probability almost 1 the adversary is dealing with the proposed PRF.
+
+		The proposed construction could still work in some other cases, but it's not general.
+	\item This is a PRF.
+		Assume a distinguisher $\distinguisher$ exists for $F'_k$, we can then build a distinguisher $\distinguisher'$ for $F_k$.
+		$\distinguisher'$ can query an unknown function $f$.
+		It asks $\distinguisher$ for inputs $x_1, \dots, x_n$, and for each $x_i$ gives to $\distinguisher$
+		\[
+			y = f(x_i || 0) || f(x_i || 1)
+		\]
+		When $\distinguisher$ outputs a decision, $\distinguisher'$ outputs the same.
 \end{enumerate}
 
 \section{Secret-Key Encryption}
