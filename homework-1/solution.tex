@@ -45,6 +45,12 @@
 
 \begin{enumerate}
 	\item A family $\hash$ is pairwise independent if for all two distinct messages $m, m'$ the couple $(h_k(m), h_k(m')) \in \Phi^2$ is uniform over the (random) choice of $k$.
+		The probability of a collision, given $m, m'$ and a random $s$, can be computed exactly in the case of a pairwise independent function, as
+		\[
+			\Pr{h_s(m) = h_s(m')} = \sum_{\phi \in \Phi} \Pr{(h_s(m), h_s(m')) = (\phi, \phi)} =
+			\abs{\Phi} \cdot \frac{1}{\abs{\Phi}^2} = \frac{1}{\abs{\Phi}}
+		\]
+		which gives us the definition of universal hash function, satisfied with an equality.
 
 	\item prova
 \end{enumerate}
@@ -52,17 +58,31 @@
 \section{One-Way Functions}
 
 \begin{enumerate}
-	\item prova
+	\item An inefficient attacker, given $y = f(x)$ for some $x$, can always try out each possible string in $\{0,1\}^{n}$ until it finds $x'$ such that $f(x')=y$.
+		Instead, an efficient attacker could sample $\{0,1\}^{n}$ uniformly at random, obtaining a string $x'$.
+		The probability of success for this attacker can be bounded as
+		\[
+			\Pr{x' \in f^{-1}(y)} \le \Pr{x' \in \{x\}} = \frac{1}{2^n}
+		\]
+		where $f^{-1}(y)$ is the set of pre-images of $y$ with respect to $f(\cdot)$, which contains at least $x$.
 
 	\item
 		\begin{enumerate}
 			\item This is not a one way function: given $z = f(x,y)$ the adversary could compute $z_1 || z_2$, with $\abs{z_1} = \abs{z_2} = n$ (assuming $f : \{0,1\}^{2n} \to \{0,1\}^{2n}$), by taking $z_1 = \floor{\frac{z}{2}}$ and $z_2 = \ceil{\frac{z}{2}}$, interpreting $z, z_1, z_2$ as binary encodings of natural numbers.
-			\item This is a one way function: assume $\distinguisher$ breaks $g$, we can then build $\distinguisher'$ which breaks $f$.
-				$\distinguisher'$ receives $y = f(x_1)$ for some $x_1$, creates a $x_2$ and gives the message $y || x_2$ to $\distinguisher$.
-				Then $\distinguisher$ outputs $x' = x'_1 || x'_2$ (with $x'_2 = x_2$) with non-negligible probability.
-				Since $g(x') = f(x'_1) || x'_2$, $\distinguisher'$ can break $f$ using $x'_1$.
-			\item prova
-			\item prova
+			\item This is a one way function: assume $\adversary$ breaks $g$, we can then build $\adversary'$ which breaks $f$.
+				$\adversary'$ receives $y = f(x_1)$ for some $x_1$, creates a $x_2$ and gives the message $y || x_2$ to $\adversary$.
+				Then $\adversary$ outputs $x' = x'_1 || x'_2$ (with $x'_2 = x_2$) with non-negligible probability.
+				Since $g(x') = f(x'_1) || x'_2$, $\adversary'$ can break $f$ using $x'_1$.
+			\item This is a one way function.
+				With the same argument as given above, given an adversary capable of breaking $g(\cdot)$ we are able to break $f(\cdot)$.
+			\item This is a one way function.
+				Assume $\adversary$ breaks $g$, we could then build $\adversary'$ which breaks $f$ with non-negligible probability.
+				$\adversary'$ receives $y = f(x)$ for some $x$.
+				If $x = \hat{x} || 0$, $\adversary$ will be able to break $g(\hat{x}) = y$ and return $x'$ such that $f(x' || 0) = y$.
+				Then $\adversary'$ would be able to break $f(\cdot)$ using $x' || 0$.
+				If $x = \hat{x} || 1$, $\adversary$ could be unable to break it, but that happens only half of the times if $x$ is sampled uniformly.
+				Notice that if $\exists x_1 = \bar{x} || 0$ such that $f(x_1) = y$, $\adversary$ can still be able to break it.
+				Thus $\adversary'$ can break $f(\cdot)$ with probability at least $\frac{1}{2}$.
 		\end{enumerate}
 \end{enumerate}
 
