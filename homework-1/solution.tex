@@ -1,6 +1,7 @@
 \documentclass{article}
 
 \usepackage{amsmath}
+\usepackage{amsfonts}
 \usepackage{fullpage}
 
 \renewcommand{\theenumi}{\alph{enumi}}
@@ -14,6 +15,10 @@
 \newcommand{\authenticators}{\Phi}
 
 \newcommand{\compind}{\approx_c}
+
+\newcommand{\field}{\mathbb{F}}
+\newcommand{\zero}{\underline{0}}
+\renewcommand{\ker}{\ensuremath{\mathrm{ker}\,}}
 
 \newcommand{\xor}{\oplus}
 \renewcommand{\Pr}[1]{\ensuremath{\mathrm{Pr} \left[ {#1} \right]}}
@@ -52,7 +57,25 @@
 		\]
 		which gives us the definition of universal hash function, satisfied with an equality.
 
-	\item prova
+	\item We can think of the proposed hash function as a set of linear applications $h_s : \field^t \to \field$ over vector field $\field^t$.
+		If two ``vectors'' (i.e.\ messages) $x$ and $\hat{x}$ collide, then it must be that
+		\[
+			h_s(x) = h_s(\hat{x}) \implies h_s(x - \hat{x}) = \zero_t
+		\]
+		From linear algebra we know that the dimension of the kernel of $h_s$ is $t-1$.
+		The number of vectors inside the kernel of $h_s$ can be upper bounded by
+		\[
+			\abs{\ker h_s} \le \abs{\field}^{t-1}
+		\]
+		Finding a collision $\hat{x}$ with a vector $x$ is the same as finding a vector $z$ inside the kernel of $h_s$, since $\hat{x} = x - z$.
+		This can be upper bounded as follows
+		\[
+			\Pr{h_s(x) = h_s(\hat{x})} =
+			\Pr{z \in \ker h_s} \le
+			\frac{\abs{\field}^{t-1}}{\abs{\field^{t}}} =
+			\frac{1}{\abs{\field}}
+		\]
+		Since the co-domain of $h_s$ is $\field$, the proposed hash is universal.
 \end{enumerate}
 
 \section{One-Way Functions}
