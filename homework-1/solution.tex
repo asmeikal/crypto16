@@ -180,9 +180,30 @@
 		When $\distinguisher$ outputs a decision, $\distinguisher'$ outputs the same.
 \end{enumerate}
 
-\section{Secret-Key Encryption}
-
-Prova.
+%\section{Secret-Key Encryption}
+%
+%We will call $G_{\Pi,\adversary}(\lambda,b) = G_b$ the game played in the definition (where $b$ is either 0 or 1), and $G_{\Pi,\adversary}(\lambda) = G_{rnd}$ the proposed game.
+%We will also write $G_b = 1$ and $G_{rnd} = 1$ to represent the events in which the adversary wins the specific game (by correctly guessing the value of $b$).
+%Notice that the games are almost the same, except for the fact that in the $G_b$ games the message which is chosen is fixed, while in $G_{rnd}$ the message is chosen (uniformly) at random.
+%
+%The proposed formulation is implied by the definition.
+%Notice that
+%\[
+%	\Pr{G_{rnd}=1} =
+%	\Pr{G_0 = 1 \land b = 0} + \Pr{G_1 = 1 \land b = 1} =
+%	\frac{1}{2} \Pr{G_0 = 1} + \frac{1}{2} \Pr{G_1 = 1}
+%\]
+%i.e.\ the event of winning the random game can be reduced (with conditional probabilities) to the event of winning one of the two games with fixed $b$ after chosing $b$.
+%This can be used to show that the probability of winning the random game is less than $\frac{1}{2}$ plus something negligible.
+%
+%To do so, we manipulate the definition of SKE.
+%\begin{align*}
+%	\abs{\Pr{G_0 = 1} - \Pr{G_1 = 1}} \le \epsilon \implies &
+%	-\epsilon \le \Pr{G_0=1} - \Pr{G_1 = 1} \le \epsilon \implies \\
+%	& \Pr{G_0 = 1} \le \Pr{G_1 = 1} + \epsilon \, \land \\
+%	& \Pr{G_1 = 1} \le \Pr{G_0 = 1} + \epsilon
+%\end{align*}
+%Since $\Pr{G_0 = 1} + \Pr{G_1 = 1} \le 1$.
 
 \end{document}
 
