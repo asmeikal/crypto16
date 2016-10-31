@@ -68,10 +68,10 @@
 			\abs{\ker h_s} \le \abs{\field}^{t-1}
 		\]
 		Finding a collision $\hat{x}$ with a vector $x$ is the same as finding a vector $z$ inside the kernel of $h_s$, since $\hat{x} = x - z$.
-		This can be upper bounded as follows
+		Thus the probability of a collision is
 		\[
 			\Pr{h_s(x) = h_s(\hat{x})} =
-			\Pr{z \in \ker h_s} \le
+			\Pr{z \in \ker h_s} =
 			\frac{\abs{\field}^{t-1}}{\abs{\field^{t}}} =
 			\frac{1}{\abs{\field}}
 		\]
