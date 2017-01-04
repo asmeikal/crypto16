@@ -1,0 +1,171 @@
+
+\chapter{Introduction}
+
+\chapterprecishere{Solomon,\\ I'm concerned about security; I think, when we email each other, we should use some sort of code.}
+
+Confidentiality is our goal.
+We want to encrypt and decrypt a (plaintext) message $m$, using a key, to obtain a cyphertext $c$.
+As per Kirkoff's principle, only the key is secret.
+
+% Drawing of message exchange: A, B, E
+
+Our encryption schemes have the following syntax:
+\begin{equation*}
+	\GenericEncSchemeTuple.
+\end{equation*}
+$A$ and $B$, the actors of our communication exchange, share $k$, the key, taken from some key space $\K$.
+The elements of our encryption scheme play the following roles:
+\begin{enumerate}
+	\item $\GenericKeyGen$ outputs a random key from the key space $\K$, and we write this as $k \rand{\GenericKeyGen}$;
+	\item $\GenericEnc : \K \times \M \to \C$ is the encryption function, mapping a key and a message to a cyphertext;
+	\item $\GenericDec : \K \times \C \to \M$ is the decryption function, mapping a key and a cyphertext to a message.
+\end{enumerate}
+We expect an encryption scheme to be at least correct:
+\begin{equation*}
+	\forall k \in \K, \forall m \in \M . \GenericDec(k, \GenericEnc(k, m)) = m.
+\end{equation*}
+
+\section{Perfect secrecy}
+
+Shannon defined ``perfect secrecy'', \ie the fact that the cyphertext carries no information about the plaintext.
+\begin{definition}[Perfect secrecy]\label{def:perfect-secrecy}
+	Let $M$ be a \ac{RV} over $\M$, and $K$ be a uniform distribution over $\K$.
+
+	$(\GenericEnc, \GenericDec)$ has perfect secrecy if
+	\begin{equation*}
+		\forall M, \forall m \in \M, c \in \C . \Pr{M = m} = \Pr{M = m | C = c}
+	\end{equation*}
+	where $C = \GenericEnc(k,m)$ is a third \ac{RV}.
+\end{definition}
+
+We have equivalent definitions for perfect secrecy.
+\begin{theorem}\label{thm:perfect-secrecy:equivalent-definitions}
+	The following definitions are equivalent:
+	\begin{enumerate}
+		\item \label{itm:thm:perfect-secrecy:original} \cref{def:perfect-secrecy};
+		\item \label{itm:thm:perfect-secrecy:independent} $M$ and $C$ are independent;
+		\item \label{itm:thm:perfect-secrecy:invariant} $\forall m, m' \in \M, \forall c \in \C$
+			\begin{equation*}
+				\Pr{\GenericEnc(k,m) = c} = \Pr{\GenericEnc(k,m') = c}
+			\end{equation*}
+			where $k$ is a random key in $\K$ chosen with uniform probability. \qedhere
+	\end{enumerate}
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:perfect-secrecy:equivalent-definitions}]
+	First, we show that \ref{itm:thm:perfect-secrecy:original} implies \ref{itm:thm:perfect-secrecy:independent}.
+	\begin{align*}
+		\Pr{M=m} & = \Pr{M = m | C = c} \\
+		& = \frac{\Pr{M = m \land C = c}}{\Pr{C = c}} \tag{by Bayes}
+		\\
+		& \implies \\
+		\Pr{M = m} \Pr{C = c}
+		& =
+		\Pr{M = m \land C = c}
+	\end{align*}
+	which is the definition of independence.
+
+	Now we show that \ref{itm:thm:perfect-secrecy:independent} implies \ref{itm:thm:perfect-secrecy:invariant}.
+	Fix $m \in \M$ and $c \in \C$.
+	\begin{align*}
+		\Pr{\GenericEnc(k, m) = c} 
+		& =
+		\Pr{\GenericEnc(k, M) = c | M = m} \tag{we fixed $m$}
+		\\
+		& = \Pr{C = c | M = m} \tag{definition of the \ac{RV} $C$}
+		\\
+		& = \Pr{C = c}. \tag{by \ref{itm:thm:perfect-secrecy:independent}}
+	\end{align*}
+	Since $m$ is arbitrary, we can do the same for $m'$, and obtain
+	\begin{equation*}
+		\Pr{\GenericEnc(k,m') = c} = \Pr{C = c}
+	\end{equation*}
+	which gives us \ref{itm:thm:perfect-secrecy:invariant}.
+
+	Now we want to show that \ref{itm:thm:perfect-secrecy:invariant} implies \ref{itm:thm:perfect-secrecy:original}.
+	Take any $c \in \C$.
+	\begin{align*}
+		\Pr{C = c}
+		& =
+		\sum_{m' \in \M} \Pr{C = c \land M = m'}
+		\\
+		& = 
+		\sum_{m' \in \M} \Pr{C = c | M = m'} \Pr{M = m'}
+		\tag{by Bayes}
+		\\
+		& =
+		\sum_{m' \in \M} \Pr{\GenericEnc(k,M) = c | M = m'} \Pr{M = m'}
+		\\
+		& =
+		\sum_{m' \in \M} \Pr{\GenericEnc(k,m') = c} \Pr{M = m'}
+		\\
+		& =
+		\Pr{\GenericEnc(k, m) = c} \underbrace{\sum_{m' \in \M} \Pr{M = m'}}_{1}
+		\tag{$\GenericEnc$ is indepenendent of $M$, so we take it out}
+		\\
+		& =
+		\Pr{\GenericEnc(k,M) = c | M = m} =
+		\Pr{C = c | M = m}.
+	\end{align*}
+	We are left to show that $\Pr{M = m} = \Pr{M = m | C = c}$, but this is easy with Bayes.
+\end{proof}
+
+\subsection{\acl{OTP}}
+
+Now we'll see a perfect encryption scheme, the \ac{OTP}.
+The message space, the cyphertext space, and the key space are all the same, \ie $\M = \K = \C = \{0,1\}^{l}$, with $l \in \Naturals$.
+
+Encryption and decryption use the xor operation:
+\begin{itemize}
+	\item $\OTPEnc(k,m) = k \xor m = c$;
+	\item $\OTPDec(k,c) = c \xor k = (k \xor m) \xor k = m$.
+\end{itemize}
+Seeing that this is correct is immediate.
+
+This can actually be done in any finite abelian group $(\Group, +)$, where you just do $k + m$ to encode and $c - k$ to decode.
+
+\begin{theorem} \label{thm:otp:perfect-secrecy}
+	\ac{OTP} is perfectly secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:otp:perfect-secrecy}]
+	Fix $m \in \M, c \in \C$, and choose a random key.
+	\begin{equation*}
+		\Pr{\OTPEnc(k,m) = c} = \Pr{k = c - m} = \frac{1}{\abs{\Group}}.
+	\end{equation*}
+	This is true for any $m$, so we are done.
+\end{proof}
+
+\ac{OTP} has two problems:
+\begin{enumerate}
+	\item the key is long (as long as the message);
+	\item we can't reuse the key:
+	\begin{equation*}
+		\begin{array}{c}
+			c = k + m \\
+			c' = k + m'
+		\end{array}
+		\implies
+		c - c' = m - m'
+		\implies
+		m' = m - (c - c').
+	\end{equation*}
+\end{enumerate}
+
+\begin{theorem}[Shannon, 1949] \label{thm:shannon:1949}
+	In any perfectly secure encryption scheme the size of the key space is at least as large as the size of the message space, \ie $\abs{\K} \ge \abs{\M}$.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:shannon:1949}]
+	Assume, for the sake of contradiction, that $\abs{\K} < \abs{\M}$.
+	Fix $M$ to be the uniform distribution over $\M$, which we can do as perfect secrecy works for any distribution.
+	Take a cyphertext $c \in \C$ such that $\Pr{C = c} > 0$, \ie $\exists m, k$ such that $\OTPEnc(k,m) = c$.
+
+	Consider $\M' = \{ \OTPDec(k,c) : k \in \K \}$, the set of all messages decrypted from $c$ using any key.
+	Clearly, $\abs{\M'} \le \abs{\K} < \abs{\M}$, so $\exists m' \in \M$ such that $m' \not\in \M'$.
+	This means that
+	\begin{equation*}
+		\Pr{M = m'} = \frac{1}{\abs{\M}} \neq \Pr{M = m' | C = c} = 0
+	\end{equation*}
+	in contradiction with perfect secrecy.
+\end{proof}
