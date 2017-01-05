@@ -7,9 +7,12 @@
 \usepackage{acronym}
 \usepackage{multirow}
 \usepackage{cleveref}
+\usepackage{graphicx}
+\usepackage{mathtools}
 
 \theoremstyle{plain}
 \newtheorem{thm}{Theorem}
+\newtheorem{lem}{Lemma}
 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
@@ -21,6 +24,9 @@
 \newenvironment{theorem}{\begin{thm}%
 \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
 {\popQED\end{thm}}
+\newenvironment{lemma}{\begin{lem}%
+\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+{\popQED\end{lem}}
 
 \input{macro.tex}
 

@@ -1,7 +1,10 @@
 *
 !.gitignore
 !*.tex
+!*.odg
+!*.pdf
 
 !homework-1
 !notes
+!notes/drawings
 

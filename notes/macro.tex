@@ -1,35 +1,71 @@
 
 \newcommand{\ie}{\textit{i.e.}, }
+\newcommand{\eg}{\textit{e.g.}, }
 
+\renewcommand{\epsilon}{\varepsilon}
+
+\newcommand{\comma}{\ensuremath{, \allowbreak}}
+\newcommand{\from}{\leftarrow}
+
+\newcommand{\A}{\mathcal{A}}
 \newcommand{\C}{\mathcal{C}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\G}{\mathcal{G}}
+\renewcommand{\H}{\mathcal{H}}
 \newcommand{\K}{\mathcal{K}}
 \newcommand{\M}{\mathcal{M}}
+\newcommand{\U}{\mathcal{U}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Z}{\mathcal{Z}}
 
 \newcommand{\Naturals}{\mathbb{N}^{+}}
+\newcommand{\NaturalsZ}{\mathbb{N}}
 \newcommand{\Integers}{\mathbb{Z}}
+\newcommand{\Reals}{\mathbb{R}}
+\newcommand{\Bool}{\{0,1\}}
 
+\newcommand{\IntegersPrimeGroup}[1][p]{\Integers^{\star}_{#1}}
+
+\newcommand{\Ext}{\mathrm{Ext}}
+\newcommand{\Gen}{\mathrm{Gen}}
+\newcommand{\KGen}{\mathrm{KGen}}
+\newcommand{\KeyGen}{\mathrm{KeyGen}}
+\newcommand{\Mac}{\mathrm{Mac}}
+\newcommand{\Vrfy}{\mathrm{Vrfy}}
 \newcommand{\Enc}{\mathrm{Enc}}
 \newcommand{\Dec}{\mathrm{Dec}}
 
 \newcommand{\GenericEncScheme}{\Pi}
-\newcommand{\GenericKeyGen}{\mathrm{Gen}}
+\newcommand{\GenericKeyGen}{\Gen}
 \newcommand{\GenericEnc}{\Enc}
 \newcommand{\GenericDec}{\Dec}
-\newcommand{\GenericEncSchemeTuple}{\GenericEncScheme = \left( \GenericKeyGen, \GenericEnc, \GenericDec \right)}
+\newcommand{\GenericEncSchemeTuple}{\GenericEncScheme = \left( \GenericKeyGen\comma \GenericEnc\comma \GenericDec \right)}
+
+\newcommand{\GenericMACScheme}{\Pi}
+\newcommand{\GenericMac}{\Mac}
+\newcommand{\GenericVrfy}{\Vrfy}
+\newcommand{\GenericAuthSpace}{\Phi}
+\newcommand{\GenericMACSchemeTuple}{\GenericMACScheme = \left( \GenericKeyGen\comma \GenericMac\comma \GenericVrfy \right)}
 
 \newcommand{\OTPEnc}{\Enc}
 \newcommand{\OTPDec}{\Dec}
 
 \newcommand{\Group}{\mathbb{G}}
-\newcommand{\GroupTuple}{(\Group,g,q)}
-\newcommand{\GroupGen}{\GroupTuple \leftarrow \mathrm{GroupGen}(1^{\lambda})}
+\newcommand{\GroupTuple}{(\Group\commag\commaq)}
+\newcommand{\GroupGen}{\GroupTuple \from \mathrm{GroupGen}(1^{\lambda})}
 
-\renewcommand{\Pr}[1]{\ensuremath{\mathrm{Pr} \left[ {#1} \right]}}
+\newcommand{\pr}{\mathop{\mathrm{Pr}}}
+\renewcommand{\Pr}[2][]{\ensuremath{\pr\limits_{#1} \left[ {#2} \right]}}
 
-\newcommand{\rand}[1]{\leftarrow \$ {#1}}
+\newcommand{\rand}[1]{\from {\scriptstyle \$} {#1}}
 \newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\poly}{\mathrm{poly}}
 
-\newcommand{\Adv}{\mathcal{A}}
+\newcommand{\CompInd}{\approx_c}
+
+\newcommand{\Adv}{\A}
+\newcommand{\Distinguisher}{\D}
 
 \newcommand{\negl}[1]{\mathrm{negl}\left({#1}\right)}
 
