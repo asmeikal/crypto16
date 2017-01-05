@@ -160,3 +160,233 @@ Let's see our first cryptographic primitive.
 	By reduction, we also have that $f(\G(\U_{\lambda})) \CompInd f(\U_{\lambda+1})$.
 	Thus, $\H_{i}^{\lambda} \CompInd \H_{i+1}^{\lambda}$.
 \end{proof}
+
+\section{\aclp{HCP}}
+
+\begin{definition}[\acl{HCP} - I] \label{def:hcp-i}
+	A polynomial time function $h : \{0,1\}^{n} \to \{0,1\}$ is \emph{hard core} for $f : \{0,1\}^{n} \to \{0,1\}^{n}$ if for all \ac{PPT} adversaries $\Adv$
+	\begin{equation*}
+		\Pr{\Adv(f(x)) = h(x) : x \rand{\{0,1\}^{n}}} \le \frac{1}{2} + \epsilon(\lambda).
+	\end{equation*}
+\end{definition}
+The $\frac{1}{2}$ in the upper bound tells us that the adversary can't to better than guessing.
+
+\begin{definition}[\acl{HCP} - II] \label{def:hcp-ii}
+	A polynomial time function $h : \{0,1\}^{n} \to \{0,1\}$ is \emph{hard core} for $f : \{0,1\}^{n} \to \{0,1\}^{n}$ if for all \ac{PPT} adversaries $\Adv$
+	\begin{equation*}
+		\abs{
+			\Pr{
+			\begin{array}{c}
+				\Adv(f(x), h(x)) = 1 : \\
+				x \rand{\{0,1\}^{n}}
+			\end{array}
+			}
+			-
+			\Pr{
+			\begin{array}{c}
+				\Adv(f(x), b) = 1 : \\
+				x \rand{\{0,1\}^{n}}; \\
+				b \rand{\{0,1\}}
+			\end{array}
+			}
+		}
+		\le
+		\epsilon(\lambda).
+	\end{equation*}
+\end{definition}
+
+\begin{theorem}
+	\Cref{def:hcp-i} and \cref{def:hcp-ii} are equivalent.
+\end{theorem}
+Proof of this theorem is left as exercise.
+
+Luckily for us, every \ac{OWF} has a \ac{HCP}.
+There isn't a single \ac{HCP} $h$ for all \acp{OWF} $f$.
+Suppose $\exists$ such $h$, then take $f$ and let $f'(x) = h(x) || f(x)$.
+Then, if $f'(x) = y || b$ for some $x$, it will always be that $h(x) = b$.
+
+But, given a \ac{OWF}, we can create a new \ac{OWF} for which $h$ is hard core.
+
+\begin{theorem}[\ac{GL}, 1983]
+	Let $f : \{0,1\}^n \to \{0,1\}^{n}$ be a \ac{OWF}, and define $g(x,r) = f(x) || r$ for $r \rand{\{0,1\}^{n}}$.
+	Then $g$ is a \ac{OWF}, and 
+	\begin{equation*}
+		h(x,r) = \DotProduct{x}{r} = \sum_{i=1}^{n} x_i \cdot r_i \mod 2
+	\end{equation*}
+	is hardcore for $g$. 
+\end{theorem}
+
+We say that $f : \{0,1\}^n \to \{0,1\}^{n}$ is a \ac{OWP} if $f$ is a \ac{OWF}, $\forall x . \abs{x} = \abs{f(x)}$, and for all distinct $x, x' . f(x) \neq f(x')$.
+
+\begin{corollary} \label{cor:owp-hcp-prg}
+	Let $f$ be a \ac{OWP}, and consider $g : \{0,1\}^n \to \{0,1\}^{n}$ from the \ac{GL} theorem.
+	Then $\G(s) = (g(s), h(s))$ is a \ac{PRG} with stretch 1.
+\end{corollary}
+
+\begin{proof}[Proof of \cref{cor:owp-hcp-prg}]
+	\begin{align*}
+		\G(\U_{2n})
+		& =
+		(g(x,r), h(x,r)) \\
+		& =
+		(f(x) || r, \DotProduct{x}{r}) \\
+		& \CompInd 
+		(f(x) || r, b) \tag{\ac{GL}}
+		\\
+		& \CompInd
+		\U_{2n+1}.
+	\end{align*}
+\end{proof}
+
+% this part is not clear
+
+\begin{framed}
+{\bfseries UNCLEAR}
+
+Assume instead $f$ is a \ac{OWF}, and that is 1-to-1 (injective).
+Consider $\X = g^m(\vec{x}) = (g(x_1), h(x_1), \dots, g(x_m), h(x_m))$, where $x_1, \dots, x_m \in \{0,1\}^{n}$ (\ie, $\vec{x} \in \{0,1\}^{nm}$).
+You can construct a \ac{PRG} from a \ac{OWF} as shown by H.I.L.L.
+
+\begin{fact}
+$\X$ is indistinguishable from $\X'$ such that $\H_{\infty}(\X') \ge k = n \cdot m + m$, since $f$ is injective.
+\end{fact}
+
+Now $\G(s, \vec{x}) = (s, \Ext(s, g^{m}(\vec{x})))$ where $\Ext : \{0,1\}^{d} \times \{0,1\}^{nm} \to \{0,1\}^{l}$, and $l = nm + 1$.
+This works for $m = \omega(\log(n))$.
+You get extraction error $\epsilon \approx 2^{-m}$.
+\end{framed}
+
+\section{\acl{SKE} Schemes}
+
+We call $\SKESchemeTuple$ a \ac{SKE} scheme.
+\begin{itemize}
+	\item $\SKEKeyGen$ outputs a key $k \rand{\K}$;
+	\item $\Enc(k, m) = c$ for some $m \in \M$, $c \in \C$;
+	\item $\Dec(k, c) = m$.
+\end{itemize}
+As usual, we want $\SKEScheme$ to be correct.
+
+We want to introduce computational security: a bounded adversary can not gain information on the message given the cyphertext.
+\begin{definition}[One time security]
+	A \ac{SKE} scheme $\SKESchemeTuple$ has one time computational security if for all \ac{PPT} adversaries $\Adv$ $\exists$ a negligible function $\epsilon$ such that
+	\begin{equation*}
+		\abs{
+			\Pr{\SKEGameOneTime(\lambda, 0) = 1}
+			-
+			\Pr{\SKEGameOneTime(\lambda, 1) = 1}
+		}
+		\le \epsilon(\lambda)
+	\end{equation*}
+	where $\SKEGameOneTime(\lambda, b)$ is the following ``game'' (or experiment):
+	\begin{enumerate}
+		\item pick $k \rand{\K}$;
+		\item $\Adv$ outputs two messages $(m_0, m_1) \from \Adv(1^{\lambda})$ where $m_0, m_1 \in \M$ and $\abs{m_0} = \abs{m_1}$;
+		\item $\c = \SKEEnc(k, m_b)$ with $b$ input of the experiment;
+		\item output $b' \from \Adv(1^{\lambda}, c)$, \ie the adversary tries to guess which message was encrypted. \qedhere
+	\end{enumerate}
+\end{definition}
+
+Let's look at a construction.
+Let $\G : \{0,1\}^{n} \to \{0,1\}^{l}$ be a \ac{PRG}.
+Set $\K = \{0,1\}^{n}$, and $\M = \C = \{0,1\}^{l}$.
+Define $\SKEEnc(k,m) = \G(k) \xor m$ and $\SKEDec(k,c) = \G(k) \xor c$.
+
+\begin{theorem} \label{thm:ske-prg}
+	If $\G$ is a \ac{PRG}, the above \ac{SKE} is one-time computationally secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:ske-prg}]
+	Consider the following experiments:
+	\begin{itemize}
+		\item $\H_0(\lambda, b)$ is like $\SKEGameOneTime$:
+		\begin{enumerate}
+			\item $k \rand{\{0,1\}^{n}}$;
+			\item $(m_0, m_1) \from \Adv(1^{\lambda})$;
+			\item $c = \G(k) \xor m_b$;
+			\item $b' \from \Adv(1^{\lambda}, c)$.
+		\end{enumerate}
+		\item $\H_1(\lambda, b)$ replaces $\G$ with something truly random:
+		\begin{enumerate}
+			\item $(m_0, m_1) \from \Adv(1^{\lambda})$;
+			\item $r \rand{\{0,1\}^{l}}$;
+			\item $c = r \xor m_b$, basically like \ac{OTP};
+			\item $b' \from \Adv(1^{\lambda}, c)$.
+		\end{enumerate}
+		\item $\H_2(\lambda)$ is just randomness:
+		\begin{enumerate}
+			\item $(m_0, m_1) \from \Adv(1^{\lambda})$;
+			\item $c \rand{\{0,1\}^{l}}$;
+			\item $b' \from \Adv(1^{\lambda}, c)$.
+		\end{enumerate}
+	\end{itemize}
+
+	First, we show that $\H_0(\lambda, b) \CompInd \H_1(\lambda, b)$, for $b \in \{0,1\}$.
+	Fix some value for $b$, and assume exists a \ac{PPT} distinguisher $\Distinguisher$ between $\H_0(\lambda, b)$ and $\H_1(\lambda, b)$: we then can construct a distinguisher $\Distinguisher'$ for the \ac{PRG}.
+
+	$\Distinguisher'$, on input $z$, which can be either $\G(k)$ for some $k \rand{\{0,1\}^{n}}$, or directly $z \rand{\{0,1\}^{l}}$, does the following:
+	\begin{itemize}
+		\item get $(m_0, m_1) \from \Distinguisher(1^{\lambda})$;
+		\item feed $z \xor m_b$ to $\Distinguisher$;
+		\item output the result of $\Distinguisher$.
+	\end{itemize}
+
+	Now, we show that $\H_1(\lambda, b) \CompInd \H_2(\lambda, b)$, for $b \in \{0,1\}$.
+	By perfect secrecy of \ac{OTP} we have that $(m_0 \xor r) \approx z \approx (m_1 \xor r)$, so $\H_1(\lambda, 0) \CompInd H_2(\lambda) \CompInd \H_1(\lambda, 1)$.
+\end{proof}
+
+\begin{corollary}
+	One-time computationally secure \ac{SKE} are in minicrypt.
+\end{corollary}
+
+This scheme is not secure if the adversary knows a $(m_1, c_1)$ pair, and we reuse the key.
+Take any $m, c$, then $c \xor c_1 = m \xor m_1$, and you can find $m$.
+This is called a \ac{CPA}, something we will defined shortly using a \ac{PRF}.
+
+\section{\acl{CPA}}
+
+\begin{definition}[\acl{PRF}]
+	Let $\F = \{ F_k : \{0,1\}^{n} \to \{0,1\}^{l} \}$ be a family of functions, for $k \in \{0,1\}^{\lambda}$.
+	Consider the following two experiments:
+	\begin{itemize}
+		\item $\PRFGameReal(\lambda)$, defined as:
+			\begin{enumerate}
+				\item $k \rand{\{0,1\}^{\lambda}}$;
+				\item $b' \from \Adv^{F_k(\cdot)}(1^{\lambda})$, where $\Adv$ can query an oracle for values of $F_k(\cdot)$, without knowing $k$.
+			\end{enumerate}
+		\item $\PRFGameRand(\lambda)$, defined as:
+			\begin{enumerate}
+				\item $R \rand{\R(n \to l)}$, \ie a function $R$ is chosen at random from all functions from $\{0,1\}^{n}$ to $\{0,1\}^{l}$;
+				\item $b' \from \Adv^{R(\cdot)}(1^{\lambda})$, where $\Adv$ can query an oracle for values of $R(\cdot)$.
+			\end{enumerate}
+	\end{itemize}
+	The family $\F$ of functions is a \ac{PRF} family if for all \ac{PPT} adversaries $\Adv$ $\exists$ a negligible function $\epsilon$ such that
+	\begin{equation*}
+		\abs{
+			\Pr{\PRFGameReal(\lambda) = 1}
+			-
+			\Pr{\PRFGameRand(\lambda) = 1}
+		}
+		\le \epsilon(\lambda). \qedhere
+	\end{equation*}
+\end{definition}
+
+To introduce \acp{CPA} and \ac{CPA}-secure \ac{PKE} schemes, we first introduce the game of \ac{CPA}.
+As usual, a \ac{PKE} scheme is a tuple $\PKESchemeTuple$.
+
+$\CPAGame(\lambda, b)$ is the following game:
+\begin{enumerate}
+	\item $k \rand{\{0,1\}^{\lambda}}$;
+	\item $(m_0, m1) \from \Adv^{\PKEEnc(k, \cdot)} (1^{\lambda})$.
+		$\Adv$ is given access to an oracle for $\PKEEnc(k, \cdot)$, so she knows some $(m,c)$ couples, with $c = \PKEEnc(k, m)$;
+	\item $c \from \PKEEnc(k, m_b)$;
+	\item $b' \from \Adv^{\PKEEnc(k, \cdot)}(1^{\lambda}, c)$.
+\end{enumerate}
+
+\begin{definition}[\acs{CPA}-secure \acs{PKE} scheme]
+	A \ac{PKE} scheme $\PKESchemeTuple$ is \ac{CPA}-secure if for all \ac{PPT} adversaries $\Adv$
+	\begin{equation*}
+		\CPAGame(\lambda, 0) \CompInd \CPAGame(\lambda, 1).
+	\end{equation*}
+\end{definition}
+
+Deterministic schemes cannot achieve this, \ie when $\PKEEnc$ is deterministic the adversary could cipher $m_0$ and then compare $c$ to $\PKEEnc(k, m_0)$, and output $0$ if and only if $c = \PKEEnc(k, m_0)$.

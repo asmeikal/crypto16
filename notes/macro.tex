@@ -2,6 +2,8 @@
 \newcommand{\ie}{\textit{i.e.}, }
 \newcommand{\eg}{\textit{e.g.}, }
 
+\renewcommand{\vec}[1]{\overline{#1}}
+
 \renewcommand{\epsilon}{\varepsilon}
 
 \newcommand{\comma}{\ensuremath{, \allowbreak}}
@@ -10,10 +12,12 @@
 \newcommand{\A}{\mathcal{A}}
 \newcommand{\C}{\mathcal{C}}
 \newcommand{\D}{\mathcal{D}}
+\newcommand{\F}{\mathcal{F}}
 \newcommand{\G}{\mathcal{G}}
 \renewcommand{\H}{\mathcal{H}}
 \newcommand{\K}{\mathcal{K}}
 \newcommand{\M}{\mathcal{M}}
+\newcommand{\R}{\mathcal{R}}
 \newcommand{\U}{\mathcal{U}}
 \newcommand{\X}{\mathcal{X}}
 \newcommand{\Y}{\mathcal{Y}}
@@ -36,6 +40,8 @@
 \newcommand{\Enc}{\mathrm{Enc}}
 \newcommand{\Dec}{\mathrm{Dec}}
 
+\newcommand{\Game}{\G}
+
 \newcommand{\GenericEncScheme}{\Pi}
 \newcommand{\GenericKeyGen}{\Gen}
 \newcommand{\GenericEnc}{\Enc}
@@ -47,6 +53,25 @@
 \newcommand{\GenericVrfy}{\Vrfy}
 \newcommand{\GenericAuthSpace}{\Phi}
 \newcommand{\GenericMACSchemeTuple}{\GenericMACScheme = \left( \GenericKeyGen\comma \GenericMac\comma \GenericVrfy \right)}
+
+\newcommand{\SKEScheme}{\Pi}
+\newcommand{\SKEKeyGen}{\Gen}
+\newcommand{\SKEEnc}{\Enc}
+\newcommand{\SKEDec}{\Dec}
+\newcommand{\SKESchemeTuple}{\SKEScheme = \left( \SKEKeyGen \comma \SKEEnc \comma \SKEDec \right)}
+
+\newcommand{\SKEGameOneTime}{\Game^{\scriptstyle \text{one time}}_{\SKEScheme, \Adv}}
+
+\newcommand{\PRFGameReal}{\Game^{\scriptstyle \text{real}}_{\F, \Adv}}
+\newcommand{\PRFGameRand}{\Game^{\scriptstyle \text{rand}}_{\F, \Adv}}
+
+\newcommand{\PKEScheme}{\Pi}
+\newcommand{\PKEKeyGen}{\Gen}
+\newcommand{\PKEEnc}{\Enc}
+\newcommand{\PKEDec}{\Dec}
+\newcommand{\PKESchemeTuple}{\PKEScheme = \left( \PKEKeyGen \comma \PKEEnc \comma \PKEDec \right)}
+
+\newcommand{\CPAGame}{\Game^{\scriptstyle \text{cpa}}_{\PKEScheme,\Adv}}
 
 \newcommand{\OTPEnc}{\Enc}
 \newcommand{\OTPDec}{\Dec}
@@ -61,6 +86,8 @@
 \newcommand{\rand}[1]{\from {\scriptstyle \$} {#1}}
 \newcommand{\abs}[1]{\left|{#1}\right|}
 \newcommand{\poly}{\mathrm{poly}}
+
+\newcommand{\DotProduct}[2]{\left< {#1}, {#2} \right>}
 
 \newcommand{\CompInd}{\approx_c}
 

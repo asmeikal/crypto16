@@ -13,6 +13,8 @@
 \theoremstyle{plain}
 \newtheorem{thm}{Theorem}
 \newtheorem{lem}{Lemma}
+\newtheorem{cor}{Corollary}
+\newtheorem{fct}{Fact}
 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
@@ -27,6 +29,12 @@
 \newenvironment{lemma}{\begin{lem}%
 \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
 {\popQED\end{lem}}
+\newenvironment{corollary}{\begin{cor}%
+\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+{\popQED\end{cor}}
+\newenvironment{fact}{\begin{fct}%
+\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+{\popQED\end{fct}}
 
 \input{macro.tex}
 
