@@ -1,7 +1,9 @@
 
 \chapter{Computational Cryptography}
 
-% here something is missing on negligible functions
+\begin{framed}
+	Some details should be added on negligible functions.
+\end{framed}
 
 To introduce computational cryptography we first have to define a computational model.
 We assume the adversary is efficient, \ie it is a \ac{PPT} adversary.
@@ -216,7 +218,9 @@ But, given a \ac{OWF}, we can create a new \ac{OWF} for which $h$ is hard core.
 	is hardcore for $g$. 
 \end{theorem}
 
-We say that $f : \{0,1\}^n \to \{0,1\}^{n}$ is a \ac{OWP} if $f$ is a \ac{OWF}, $\forall x . \abs{x} = \abs{f(x)}$, and for all distinct $x, x' . f(x) \neq f(x')$.
+\begin{definition}[\acl{OWP}]
+	We say that $f : \{0,1\}^n \to \{0,1\}^{n}$ is a \ac{OWP} if $f$ is a \ac{OWF}, $\forall x . \abs{x} = \abs{f(x)}$, and for all distinct $x, x' . f(x) \neq f(x')$.
+\end{definition}
 
 \begin{corollary} \label{cor:owp-hcp-prg}
 	Let $f$ be a \ac{OWP}, and consider $g : \{0,1\}^n \to \{0,1\}^{n}$ from the \ac{GL} theorem.
@@ -287,12 +291,14 @@ We want to introduce computational security: a bounded adversary can not gain in
 \end{definition}
 
 Let's look at a construction.
-Let $\G : \{0,1\}^{n} \to \{0,1\}^{l}$ be a \ac{PRG}.
-Set $\K = \{0,1\}^{n}$, and $\M = \C = \{0,1\}^{l}$.
-Define $\SKEEnc(k,m) = \G(k) \xor m$ and $\SKEDec(k,c) = \G(k) \xor c$.
+\begin{construction}[\acs{SKE} scheme from \acs{PRG}] \label{cons:ske-prg}
+	Let $\G : \{0,1\}^{n} \to \{0,1\}^{l}$ be a \ac{PRG}.
+	Set $\K = \{0,1\}^{n}$, and $\M = \C = \{0,1\}^{l}$.
+	Define $\SKEEnc(k,m) = \G(k) \xor m$ and $\SKEDec(k,c) = \G(k) \xor c$.
+\end{construction}
 
 \begin{theorem} \label{thm:ske-prg}
-	If $\G$ is a \ac{PRG}, the above \ac{SKE} is one-time computationally secure.
+	If $\G$ is a \ac{PRG}, the \ac{SKE} in \cref{cons:ske-prg} is one-time computationally secure.
 \end{theorem}
 
 \begin{proof}[Proof of \cref{thm:ske-prg}]
@@ -335,14 +341,14 @@ Define $\SKEEnc(k,m) = \G(k) \xor m$ and $\SKEDec(k,c) = \G(k) \xor c$.
 \end{proof}
 
 \begin{corollary}
-	One-time computationally secure \ac{SKE} are in minicrypt.
+	One-time computationally secure \ac{SKE} schemes are in Minicrypt.
 \end{corollary}
 
 This scheme is not secure if the adversary knows a $(m_1, c_1)$ pair, and we reuse the key.
 Take any $m, c$, then $c \xor c_1 = m \xor m_1$, and you can find $m$.
 This is called a \ac{CPA}, something we will defined shortly using a \ac{PRF}.
 
-\section{\acl{CPA}}
+\section{\aclp{CPA} and \aclp{PRF}}
 
 \begin{definition}[\acl{PRF}]
 	Let $\F = \{ F_k : \{0,1\}^{n} \to \{0,1\}^{l} \}$ be a family of functions, for $k \in \{0,1\}^{\lambda}$.
@@ -370,23 +376,178 @@ This is called a \ac{CPA}, something we will defined shortly using a \ac{PRF}.
 	\end{equation*}
 \end{definition}
 
-To introduce \acp{CPA} and \ac{CPA}-secure \ac{PKE} schemes, we first introduce the game of \ac{CPA}.
-As usual, a \ac{PKE} scheme is a tuple $\PKESchemeTuple$.
+To introduce \acp{CPA} and \ac{CPA}-secure \ac{SKE} schemes, we first introduce the game of \ac{CPA}.
+As usual, a \ac{SKE} scheme is a tuple $\SKESchemeTuple$.
 
-$\CPAGame(\lambda, b)$ is the following game:
-\begin{enumerate}
-	\item $k \rand{\{0,1\}^{\lambda}}$;
-	\item $(m_0, m1) \from \Adv^{\PKEEnc(k, \cdot)} (1^{\lambda})$.
-		$\Adv$ is given access to an oracle for $\PKEEnc(k, \cdot)$, so she knows some $(m,c)$ couples, with $c = \PKEEnc(k, m)$;
-	\item $c \from \PKEEnc(k, m_b)$;
-	\item $b' \from \Adv^{\PKEEnc(k, \cdot)}(1^{\lambda}, c)$.
-\end{enumerate}
+\begin{definition}[\acs{CPA}-secure \acs{SKE} scheme]
+	Let $\SKESchemeTuple$ be a \ac{SKE} scheme, and consider the game $\CPAGame(\lambda, b)$, defined as:
+	\begin{enumerate}
+		\item $k \rand{\{0,1\}^{\lambda}}$;
+		\item $(m_0, m1) \from \Adv^{\SKEEnc(k, \cdot)} (1^{\lambda})$.
+			$\Adv$ is given access to an oracle for $\SKEEnc(k, \cdot)$, so she knows some $(m,c)$ couples, with $c = \SKEEnc(k, m)$;
+		\item $c \from \SKEEnc(k, m_b)$;
+		\item $b' \from \Adv^{\SKEEnc(k, \cdot)}(1^{\lambda}, c)$.
+	\end{enumerate}
 
-\begin{definition}[\acs{CPA}-secure \acs{PKE} scheme]
-	A \ac{PKE} scheme $\PKESchemeTuple$ is \ac{CPA}-secure if for all \ac{PPT} adversaries $\Adv$
+	$\SKEScheme$ is \ac{CPA}-secure if for all \ac{PPT} adversaries $\Adv$
 	\begin{equation*}
-		\CPAGame(\lambda, 0) \CompInd \CPAGame(\lambda, 1).
+		\CPAGame(\lambda, 0) \CompInd \CPAGame(\lambda, 1). \qedhere
 	\end{equation*}
 \end{definition}
 
-Deterministic schemes cannot achieve this, \ie when $\PKEEnc$ is deterministic the adversary could cipher $m_0$ and then compare $c$ to $\PKEEnc(k, m_0)$, and output $0$ if and only if $c = \PKEEnc(k, m_0)$.
+Deterministic schemes cannot achieve this, \ie when $\SKEEnc$ is deterministic the adversary could cipher $m_0$ and then compare $c$ to $\SKEEnc(k, m_0)$, and output $0$ if and only if $c = \SKEEnc(k, m_0)$.
+
+Let's construct a \ac{CPA}-secure \ac{SKE} scheme using \acp{PRF}.
+\begin{construction}[\acs{SKE} using \acsp{PRF}] \label{cons:ske-prf}
+	Let $\F$ be a \ac{PRF}, we define the following \ac{SKE} scheme $\SKESchemeTuple$:
+	\begin{itemize}
+		\item $\SKEKeyGen$ takes $k \rand{\{0,1\}^{\lambda}}$;
+		\item $\SKEEnc(k,m) = (r, F_k(r) \xor m)$, with $r \rand{\{0,1\}^{n}}$.
+			Note that, since $F_k : \{0,1\}^{n} \to \{0,1\}^{l}$, we have that $\M = \{0,1\}^{l}$ and $\C = \{0,1\}^{n+l}$;
+		\item $\SKEDec(k, (c_1, c_2)) = F_k(c_1) \xor c_2$. \qedhere
+	\end{itemize}
+\end{construction}
+
+Our construction is both one time computationally secure, and secure against \acp{CPA}.
+\begin{theorem} \label{thm:ske-prf-cpa}
+	If $\F$ is a \ac{PRF}, \cref{cons:ske-prf} is \ac{CPA}-secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:ske-prf-cpa}]
+	First, we define the experiment $\H_0(\lambda, b) \equiv \CPAGame(\lambda, b)$ as follows:
+	\begin{enumerate}
+		\item $k \rand{\{0,1\}^{\lambda}}$;
+		\item $(m_0,m_1) \from \Adv^{\SKEEnc(k, \cdot)} (1^{\lambda})$;
+		\item $c^{\star} \from (r^{\star}, F_k(r^{\star}) \xor m_b)$, where $r^{\star} \rand{\{0,1\}^{n}}$;
+		\item output $b' \from \Adv^{\SKEEnc(k, \cdot)} (1^{\lambda}, c^{\star})$.
+	\end{enumerate}
+	Note that in the \ac{CPA} game the adversary has access to an encryption oracle using the chosen key.
+
+	Now, for the first hybrid $\H_1(\lambda, b)$, where we sample a random function $R$ in place of $F_k$:
+	\begin{enumerate}
+		\item $R \rand{\R(n \to l)}$;
+		\item $(m_0,m_1) \from \Adv^{\SKEEnc(R, \cdot)} (1^{\lambda})$, where now $\SKEEnc(R, m) = (r, R(r) \xor m)$ for some random $r$;
+		\item $c^{\star} \from (r^{\star}, R(r^{\star}) \xor m_b)$, where $r^{\star} \rand{\{0,1\}^{n}}$;
+		\item output $b' \from \Adv^{\SKEEnc(R, \cdot)} (1^{\lambda}, c^{\star})$.
+	\end{enumerate}
+
+	Our first claim is that $\H_0(\lambda, b) \CompInd \H_1(\lambda, b)$ for $b \in \{0,1\}$.
+	As usual, we assume that exists an adversary $\Adv$ which can distinguish the experiments, \ie that can distinguish the oracles, and use $\Adv$ to create $\Adv_{\text{PRF}}$ that breaks the \ac{PRF}.
+
+	$\Adv_{\text{PRF}}$ has access to some oracle $O(\cdot)$, with is one of two possibilities:
+	\begin{equation*}
+		O(x) =
+		\begin{cases}
+			F_k(x) & \text{ for } k \rand{\{0,1\}^{\lambda}} \\
+			R(x) & \text{ for } R \rand{\R(n \to l)}.
+		\end{cases}
+	\end{equation*}
+	$\Adv$ gives $\Adv_{\text{PRF}}$ some message $m$.
+	$\Adv_{\text{PRF}}$ picks $r \rand{\{0,1\}^{n}}$, and queries $O(r)$ to get $z \in \{0,1\}^{l}$.
+	Then it gives $(r, z \xor m)$ to $\Adv$.
+	This is repeated as long as $\Adv$ asks for encryption queries.
+
+	Then $\Adv$ gives to $\Adv_{\text{PRF}}$ $(m_0, m_1)$, which repeats the same procedure using $m_0$ as a message (to distinguish $\H_0(\lambda, 0)$ from $\H_1(\lambda, 0)$) to compute $c^{\star}$.
+	$\Adv$, after receiving $c^{\star}$, asks some more encryption queries, and then outputs $b'$.
+	If $b' = 1$, $\Adv_{\text{PRF}}$ says $R(\cdot)$, otherwise it says $F_k(\cdot)$.
+
+	Now for the third experiment, $\H_2(\lambda)$, which uses $\PKEEnc(m) = (r_1, r_2)$ with $(r_1, r_2) \rand{\{0,1\}^{n+l}}$, \ie it outputs just randomness.
+
+	Our second claim is that $\H_1(\lambda, b) \CompInd \H_2(\lambda)$ for $b \in \{0,1\}$.
+	To see this, note that $\H_1$ and $\H_2$ are identical as long as collisions don't happen when choosing the $r$s.
+	It suffices for us to show that collisions happen with small probability.
+
+	Call $E_{i,j}$ the event ``random $r_i$ collides with random $r_j$''.
+	The event of a collision is thus $E = \biglor_{i,j} E_{i,j}$, and its probability can be upper bounded as follows:
+	\begin{equation*}
+		\Pr{E} = \sum_{i,j} \Pr{E_{i,j}} = \sum_{i,j} \Coll\left(\U_n\right) \le \binom{q}{2} 2^{-n} \le \frac{q^{2}}{2^{n}}
+	\end{equation*}
+	where $q$ is the (polynomial) number of queries that the adversary does, and $\Coll\left(\U_n\right)$ is the probability of a collision when using a uniform distribution, which is $2^{-n}$.
+\end{proof} 
+
+\begin{theorem}[\acs{GGM}, 1982]
+	\acp{PRF} can be constructed from \acp{PRG}.
+\end{theorem}
+
+\begin{corollary}
+	\acp{PRF} are in Minicrypt.
+\end{corollary}
+
+\begin{construction}[\acs{GGM} tree] \label{cons:ggm-tree}
+	Assume we have a length doubling \ac{PRG} $\G : \{0,1\}^{\lambda} \to \{0,1\}^{2\lambda}$.
+	We say that $\G(x) \Definition (\G_0(x), \G_1(x))$ to distinguish the first $\lambda$ bits from the second $\lambda$ bits.
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.8\linewidth]{drawings/ggm-tree.pdf}
+		\caption{First two levels of a \acs{GGM} tree. \label{fig:ggm-tree}}
+	\end{figure}
+
+	Now, to build the \ac{PRF} we construct a \ac{GGM} tree (\cref{fig:ggm-tree}) starting with a key $k \in \{0,1\}^{\lambda}$.
+	On input $x = (x_1, \dots, x_n) \in \{0,1\}^{n}$, with $n$ being the height of the tree, the \ac{PRF} picks a path in the tree:
+	\begin{equation*}
+		F_k(x) = \G_{x_n} \left( \dots \G_{x_1}(k) \dots \right).
+	\end{equation*}
+\end{construction}
+
+\begin{lemma} \label{lem:prg-poly-times}
+	Let $\G : \{0,1\}^{\lambda} \to \{0,1\}^{2\lambda}$ be a \ac{PRG}.
+	Then for all $t(\lambda) = \poly(\lambda)$ we have that
+	\begin{equation*}
+		\left( \G(k_1), \dots, \G(k_t) \right)
+		\CompInd
+		\underbrace{\left( \U_{2\lambda}, \dots, \U_{2\lambda} \right)}_{t \text{ times}}. \qedhere
+	\end{equation*}
+\end{lemma}
+
+\begin{proof}[Proof of \cref{lem:prg-poly-times}]
+	We define $t$ hybrids, where $\H_i(\lambda)$ is defined as
+	\begin{equation*}
+		\H_i(\lambda) = ( \G(k_1), \dots, \G(k_{t-i}), \underbrace{\U_{2\lambda}, \dots, \U_{2\lambda}}_{i \text{ times}} )
+	\end{equation*}
+	thus $\H_0(\lambda) = (\G(k_1), \dots, \G(k_t))$ and $\H_t(\lambda) = (\U_{2\lambda}, \dots, \U_{2\lambda})$.
+	To prove that $\H_1(\lambda) \CompInd \H_t(\lambda)$, we show that for any $i$ it holds that $\H_i(\lambda) \CompInd \H_{i+1}(\lambda)$.
+	This relies on the fact that $\G(k_{t-i}) \CompInd \U_{2\lambda}$: assume that exists a distinguisher $\Distinguisher$ for $\H_{i}(\lambda)$ and $\H_{i+1}(\lambda)$, we then break the \ac{PRG}.
+
+	We build $\Distinguisher'$, which takes in input some $z$ from either $\G(k_{t-i})$ or $\U_{2\lambda}$.
+	$\Distinguisher'$ takes $k_1, \dots, k_{t-(i+1)} \rand{\{0,1\}^{\lambda}}$, and feeds $(\G(k_1), \dots, \G(k_{t-(i+1)}), z, \U_{2\lambda}, \dots, \U_{2\lambda})$ to $\Distinguisher$, and returns whatever it returns.
+\end{proof}
+
+\begin{proof}[Proof that \cref{cons:ggm-tree} is a \acs{PRF}]
+	We'll define a series of hybrids to show that the \ac{GGM} tree is a \ac{PRF}.
+	$\H_0(\lambda) \equiv$ our \ac{GGM} tree.
+
+	$\H_i(\lambda)$, for $i \in [1, n]$, will replace the tree up to depth $i$ with a true random function.
+	$\H_i(\lambda)$ initially has two empty arrays $T_1$ and $T_2$.
+	On input $x \in \{0,1\}^{n}$, it checks if $\vec{x} = (x_1, \dots, x_i) \in T_1$.
+	If not, $\H_i(\lambda)$ picks $k_{\vec{x}} \rand{\{0,1\}^{\lambda}}$ and adds $\vec{x}$ to $T_1$ and $k_{\vec{x}}$ to $T_2$.
+	If $\vec{x} \in T_1$, it just retrieves $k_{\vec{x}}$ from $T_2$.
+	Then $\H_i(\lambda)$ outputs the following:
+	\begin{equation*}
+		\G_{x_n} \left( \G_{x_{n-1}} \left( \dots \G_{x_{i+1}} \left( k_{\vec{x}} \right) \dots \right) \right).
+	\end{equation*}
+
+	If $i = 0$ we have that $\vec{x} = \bot$ and that $k_{\bot} \rand{\{0,1\}^{\lambda}}$, so $\H_{0}(\lambda) \equiv$ the \ac{GGM} tree.
+	On the other hand, if $i = n$, each input $x$ leads to a random output, so $\H_{n}(\lambda)$ is just a true random function.
+
+	Assume now that exists an adversary $\Adv$ capable of telling apart $\H_{i}(\lambda)$ from $\H_{i+1}(\lambda)$, we could break the \ac{PRG}.
+\end{proof}
+
+\section{Computationally Secure \acsp{MAC}}
+
+A computationally secure \ac{MAC} should be hard to forge, even if you see polynomially many authenticated messages.
+
+\begin{definition}[\acs{UFCMA} \acs{MAC}]
+	Let $\GenericMACSchemeTuple$ be a \ac{MAC}, and consider the game $\UFCMAGame(\lambda)$ defined as:
+	\begin{enumerate}
+		\item pick $k \rand{\{0,1\}^{\lambda}}$;
+		\item $(m^{\star}, \phi^{\star}) \from \Adv^{\GenericMac(k, \cdot)}(1^{\lambda})$, where the adversary can query an authentication oracle;
+		\item output $1$ if $\GenericVrfy(k, (m^{\star}, \phi^{\star})) = 1$ and $m^{\star}$ is ``fresh'', \ie it was never queried to $\GenericMac$.
+	\end{enumerate}
+	We say that $\GenericMACScheme$ is \ac{UFCMA} if for all \ac{PPT} adversaries $\Adv$ it holds that
+	\begin{equation*}
+		\Pr{\UFCMAGame (\lambda) = 1} \le \negl{\lambda}.
+	\end{equation*}
+\end{definition}
+
+As a matter of fact, any \ac{PRF} is a \ac{MAC}.

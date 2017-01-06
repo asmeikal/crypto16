@@ -199,7 +199,7 @@ As usual, we expect a \ac{MAC} to be correct, \ie
 
 If the $\GenericMac$ function is deterministic, then it must be that $\GenericVrfy(k, m, \phi) = 1$ if and only if $\GenericMac(k, m) = \phi$.
 
-Security for \acp{MAC} is that \emph{forgery} must be hard: you can't come up with an authenticator for a message if you don't know the key.o
+Security for \acp{MAC} is that \emph{forgery} must be hard: you can't come up with an authenticator for a message if you don't know the key.
 
 \begin{definition}[Information theoretic \acs{MAC}]
 	$(\GenericMac, \GenericVrfy)$ has $\epsilon$-statistical security if for all (possibly unbounded) adversary $\Adv$, for all $m \in \M$,
@@ -225,15 +225,17 @@ Later we'll see \emph{conditional} security, based on computational assumptions.
 	Given a family $\H = \{ h_k : \M \to \GenericAuthSpace \}_{k \in \K}$ of functions, we say that $\H$ is pairwise independent if for all distinct $m, m'$ we have that $(h_k(m), h_k(m')) \in \GenericAuthSpace^2$ is uniform over the choice of $k \rand{\K}$.
 \end{definition}
 
-We say straight away a construction of a pairwise independent family of function.
-Let $p$ be a prime, the functions in our family will be
-\begin{equation*}
-	h_{a,b}(m) = a m + b \mod p
-\end{equation*}
-with $\K = \Integers^2_p$, and with $\M = \GenericAuthSpace = \Integers_p$.
+We show straight away a construction of a pairwise independent family of function.
+\begin{construction}[Pairwise independent function] \label{cons:pairwise-independent}
+	Let $p$ be a prime, the functions in our family $\H$ are defined as
+	\begin{equation*}
+		h_{a,b}(m) = a m + b \mod p
+	\end{equation*}
+	with $\K = \Integers^2_p$, and with $\M = \GenericAuthSpace = \Integers_p$.
+\end{construction}
 
 \begin{theorem} \label{thm:mod-pairwise-independent}
-	The above construction is pairwise independent.
+	\Cref{cons:pairwise-independent} is pairwise independent.
 \end{theorem}
 
 \begin{proof}[Proof of \cref{thm:mod-pairwise-independent}]
@@ -335,7 +337,7 @@ We now prove that this is an information theoretic \ac{MAC}.
 	\end{align*}
 \end{proof}
 
-Note that the previous construction ($h_k(m) = a m + b \mod p$) is insecure if the same key $k = (a,b)$ is used for two messages.
+Note that \cref{cons:pairwise-independent} ($h_k(m) = a m + b \mod p$) is insecure if the same key $k = (a,b)$ is used for two messages.
 
 \begin{theorem}
 	Any $t$-time $2^{-\lambda}$-statistically secure \ac{MAC} has key of size $(t+1)\lambda$.
@@ -363,4 +365,7 @@ How many trials do we have to make before outputting something?
 $2(1-p)p$ is the probability that we output something.
 The probability that we don't output anything for $n$ steps is thus $(1 - 2(1-p)p)^n$.
 
+\begin{framed}
+	Something is missing here on randomness extraction and min-entropy.
+\end{framed}
 % missing some stuff on randomness extraction

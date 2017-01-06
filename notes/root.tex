@@ -1,4 +1,4 @@
-\documentclass[oneside,article]{memoir}
+\documentclass[oneside,article,hidelinks]{memoir}
 
 \usepackage{amsmath}
 \usepackage{hyperref}
@@ -10,6 +10,8 @@
 \usepackage{graphicx}
 \usepackage{mathtools}
 
+\hypersetup{colorlinks=false}
+
 \theoremstyle{plain}
 \newtheorem{thm}{Theorem}
 \newtheorem{lem}{Lemma}
@@ -18,11 +20,15 @@
 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
+\newtheorem{cons}{Construction}
 
 \newcommand{\thmsymbol}{\( \diamond \)}
 \newenvironment{definition}{\begin{defn}%
 \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
 {\popQED\end{defn}}
+\newenvironment{construction}{\begin{cons}%
+\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+{\popQED\end{cons}}
 \newenvironment{theorem}{\begin{thm}%
 \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
 {\popQED\end{thm}}
