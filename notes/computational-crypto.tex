@@ -138,8 +138,9 @@ Let's see our first cryptographic primitive.
 
 	\begin{figure}
 		\centering
-		\includegraphics[width=0.8\linewidth]{drawings/prg-any-stretch.pdf}
-		\caption{Extending a \acs{PRG} with 1 bit stretch to a \acs{PRG} with $l$ bit stretch. \label{fig:prg-any-stretch}}
+		\includegraphics[width=0.8\linewidth]{drawings/prg-any-stretch.eps}
+		\caption{Extending a \acs{PRG} with 1 bit stretch to a \acs{PRG} with $l$ bit stretch.}
+		\label{fig:prg-any-stretch}
 	\end{figure}
 
 	First, let's look at the construction (\cref{fig:prg-any-stretch}).
@@ -479,8 +480,9 @@ Our construction is both one time computationally secure, and secure against \ac
 
 	\begin{figure}
 		\centering
-		\includegraphics[width=0.8\linewidth]{drawings/ggm-tree.pdf}
-		\caption{First two levels of a \acs{GGM} tree. \label{fig:ggm-tree}}
+		\includegraphics[width=0.8\linewidth]{drawings/ggm-tree.eps}
+		\caption{First two levels of a \acs{GGM} tree.}
+		\label{fig:ggm-tree}
 	\end{figure}
 
 	Now, to build the \ac{PRF} we construct a \ac{GGM} tree (\cref{fig:ggm-tree}) starting with a key $k \in \{0,1\}^{\lambda}$.
@@ -551,3 +553,330 @@ A computationally secure \ac{MAC} should be hard to forge, even if you see polyn
 \end{definition}
 
 As a matter of fact, any \ac{PRF} is a \ac{MAC}.
+
+\begin{construction}[\acs{MAC} from \acs{PRF}] \label{cons:mac-prf}
+	Let $\F = \{ F_k : \{0,1\}^{n} \to \{0,1\}^{l} \}_{k \in \{0,1\}^{\lambda}}$ be a \ac{PRF} family, and let $\K = \{0,1\}^{\lambda}$.
+	Define $\GenericMac(k, m) = F_k(m)$.
+\end{construction}
+
+\begin{theorem} \label{thm:mac-prf-ufcma}
+	If $\F$ is a \ac{PRF}, the \ac{MAC} shown in \cref{cons:mac-prf} is \ac{UFCMA}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:mac-prf-ufcma}]
+	Consider the game $\H(\lambda)$ where:
+	\begin{enumerate}
+		\item $R \rand{\R(n \to l)}$ is a random function;
+		\item $(m^{\star}, \phi^{\star}) \from \Adv^{R(\cdot)} (1^{\lambda})$;
+		\item output $1$ if $R(m^{\star}) = \phi^{\star}$ and $m^{\star}$ is ``fresh''.
+	\end{enumerate}
+	Our first claim is that $\H(\lambda) \CompInd \UFCMAGame(\lambda)$ for all \ac{PPT} adversaries $\Adv$.
+	Assume not, then $\exists$ a distinguisher $\Distinguisher$ for $\H(\lambda)$ and $\UFCMAGame(\lambda)$, and we can construct a distinguisher $\Distinguisher'$ for the \ac{PRF}.
+	$\Distinguisher'$ has access to an oracle $O(\cdot)$ which is either $F_k(\cdot)$ for some random $k$, or $R(\cdot)$ for some random function $R$.
+	$\Distinguisher'$ feeds a game to $\Distinguisher$ using $O(\cdot)$.
+
+	Our second claim is that $\Pr{\H(\lambda) = 1} \le 2^{-\lambda}$, since $R(\cdot)$ is random and the only way to predict it is by guessing.
+\end{proof}
+
+Up to this point we have shown that \ac{OWF}, \ac{PRG}, \ac{PRF} and \ac{MAC} are all in Minicrypt.
+
+\section{Domain Extension}
+
+We look now at domain extension.
+Suppose we have a \ac{PRF} family $\F = \{ F_k : \{0,1\}^{n} \to \{0,1\}^{l}\}$ as above, and we have a message $m = m_1 || \dots || m_t$, with $m_i \in \{0,1\}^{n}$, and with $t$ being the number of blocks of $m$.
+
+Let's look at some constructions that won't work.
+\begin{enumerate}
+	\item $\phi = \GenericMac\left(k, \bigxor_{i=1}^{t} m_i\right)$ does not work, since with $m = m_1 || m_2$ we could swap the bits in position $i$ of $m_1$ and $m_2$ and have the same authenticator;
+	\item $\phi_i = \GenericMac(k, m_i)$ and $\phi = \phi_1 || \dots || \phi_t$ does not work, since we could rearrange the blocks of the authenticator and of the message and still get a valid couple. \ie take $m' = m_1 || m_3 || m_2$ and $\phi' = \phi_1 || \phi_3 || \phi_2$;
+	\item $\phi_i = \GenericMac(k, \repr{i} || m_i)$ and $\phi = \phi_1 || \dots || \phi_t$, where $\repr{i}$ is the binary representation of integer $i$, does not work, since we could cut and paste blocks from different message/authenticator couples and to get a fresh valid couple.
+\end{enumerate}
+
+Now, for the real one.
+To extend the domain of a \ac{PRF} $\F$ we need a function $h : \{0,1\}^{nt} \to \{0,1\}^{n}$ for which is hard to find a collision, \ie two distinct messages $m', m''$ such that $h(m') = h(m'')$.
+To do this, we introduce \acp{CRH}, an object found in Cryptomania.
+We add a key to the hash function.
+
+\begin{definition}[\acl{UHF}]
+	The family of functions $\H = \{ h_s : \{0,1\}^{N} \to \{0,1\}^{n} \}_{s \in \{0,1\}^{\lambda}}$ is universal (as in \ac{UHF}) if for all distinct $x, x'$ we have that
+	\begin{equation*}
+		\Pr[s \rand{\{0,1\}^{\lambda}}]{h_s(x) = h_s(x')} \le \epsilon.
+	\end{equation*}
+	Two cases are possible, depending on what $\epsilon$ is:
+	\begin{itemize}
+		\item if $\epsilon = 2^{-n}$, then $\H$ is said to be \ac{PU};
+		\item if $\epsilon = \negl{\lambda}$, with $\lambda = \abs{s}$, then $\H$ is said to be \ac{AU}. \qedhere
+	\end{itemize}
+\end{definition}
+
+With \ac{UHF} we can extend the domain of a \ac{PRF}.
+\begin{theorem} \label{thm:uhf-prf-extension}
+	If $\F$ is a \ac{PRF} and $\H$ is a \ac{AU} family of hash functions, then $\F(\H)$, defined as
+	\begin{equation*}
+		\F(\H) = \left\{ F_k(h_s(\cdot)) : \{0,1\}^{N} \to \{0,1\}^{l} \right\}_{k' = (k,s)}
+	\end{equation*}
+	is a \ac{PRF}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:uhf-prf-extension}]
+	Consider the following games:
+	\begin{itemize}
+		\item $\UHFGameReal(\lambda)$, defined as:
+		\begin{enumerate}
+			\item $k \rand{\{0,1\}^{\lambda}}$, $s \rand{\{0,1\}^{\lambda}}$;
+			\item $b' \from \Adv^{F_k(h_s(\cdot))} (1^{\lambda})$.
+		\end{enumerate}
+		\item $\UHFGameRand(\lambda)$, defined as:
+		\begin{enumerate}
+			\item $\overline{R} \rand{\R(N \to l)}$;
+			\item $b \from \Adv^{\overline{R}(\cdot)} (1^{\lambda})$.
+		\end{enumerate}
+	\end{itemize}
+
+	Consider also the hybrid $\UHFGameHybrid(\lambda)$:
+	\begin{enumerate}
+		\item $s \rand{\{0,1\}^{\lambda}}$;
+		\item $R \rand{R(n \to l)}$;
+		\item $b \from \Adv^{R(h_s(\cdot))} (1^{\lambda})$.
+	\end{enumerate}
+
+	The first claim, \ie that $\UHFGameReal(\lambda) \CompInd \UHFGameHybrid(\lambda)$, is left as exercise.
+
+	The second claim is that $\UHFGameHybrid(\lambda) \CompInd \UHFGameRand(\lambda)$.
+	Assume the adversary asks $q$ distinct queries.
+	Consider the event $E$ = ``$\exists (x_i, x_j)$ such that $h_s(x_i) = h_s(x_j)$ with $i \neq j$'', and with $i,j \le q$. 
+	If $E$ doesn't happen, $\UHFGameHybrid(\lambda)$ and $\UHFGameRand(\lambda)$ are the same.
+	This event is the same as getting first all the inputs that the adversary wants to try, and then sampling $s \rand{\{0,1\}}^{\lambda}$, so its probability can be bounded as
+	\begin{equation*}
+		\Pr{E} = \Pr{\exists i,j : h_s(x_i) = h_s(x_j)} \le \binom{q}{2} \epsilon \le q^2 \epsilon. \qedhere
+	\end{equation*}
+\end{proof}
+
+Now, let's look at a construction.
+\begin{construction}[\ac{UHF} with Galois field]
+	Let $\Field$ be a finite field, such as the Galois field over $2^n$.
+	In the Galois field, a bit string represents the coefficients of a polynomial of degree $n-1$.
+	Addition is the usual, while for multiplication an irreducible polynomial $p(x)$ of degree $n$ is fixed, and the operation is carried out modulo $p(x)$.
+
+	We pick $s \in \Field$, and $x = x_1 || \dots || x_t$ with $x_i \in \Field$ for all $i$.
+	The hash function is defined as
+	\begin{equation*}
+		h_s(x) = h_s(x_1 || \dots || h_t) =
+		\sum_{i=1}^{t} x_i \cdot s^{i-1} = Q_x(s).
+	\end{equation*}
+	A collision is two distinct $x, x'$ such that
+	\begin{equation*}
+		Q_x(s) = Q_{x'}(s) \iff Q_{x-x'}(s) = 0 \iff \sum_{i=1}^{t} (x_i - x_i') s^{i-1} = 0.
+	\end{equation*}
+	This means that $s$ is a root of $Q_{x-x'}$.
+	So the probability of a collision is:
+	\begin{equation*}
+		\Pr{h_s(x) = h_s(x')} = \frac{t-1}{\abs{\Field}} = \frac{t-1}{2^n}. \tag{negligible}
+	\end{equation*}
+\end{construction}
+
+We now look at a computational variant of hash functions.
+We want hash functions for which collisions are difficult to find for any \ac{PPT} adversary $\Adv$, \ie families of functions such that
+\begin{equation*}
+	\Pr[s]{h_s(x) = h_s(x') : (x,x') \from \Adv (1^{\lambda})} \le \epsilon.
+\end{equation*}
+
+We want to use some \ac{PRF} family $\F$ to define $\H$.
+Enter \ac{CBC}-\ac{MAC} (\cref{fig:cbc-mac}).
+\ac{CBC}-\ac{MAC} is defined as
+\begin{equation*}
+	h_s(x_1, \dots, x_t) = F_s(x_t \xor F_s (x_{t-1} \xor \dots \xor F_s(x_1)) \dots).
+\end{equation*}
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.8\linewidth]{drawings/cbc-mac.eps}
+	\caption{Construction of the \acs{CBC}-\acs{MAC}.}
+	\label{fig:cbc-mac}
+\end{figure}
+
+\begin{theorem}
+	\ac{CBC}-\ac{MAC} is a computationally secure \ac{AU} hash function if $\F$ is a \ac{PRF}.
+\end{theorem}
+
+There's also the encrypted \ac{CBC}-\ac{MAC}, \ie $F_k(\text{CBC-MAC}(s,x))$.
+
+\begin{theorem}
+	\ac{CBC}-\ac{MAC} is a \ac{PRF}.
+\end{theorem}
+
+\begin{theorem}
+	\ac{CBC}-\ac{MAC} is \ac{AU}.
+\end{theorem}
+
+\ac{CBC}-\ac{MAC} is insecure with variable length messages.
+
+XOR-\ac{MAC} is defined as follows: take $\eta$, a random value (nonce), and output $(\eta, F_k(\eta) \xor h_s(x))$.
+Note that here the input is shrinked to the output size of the \ac{PRF}, while before we shrinked to the input size of the \ac{PRF}.
+
+Suppose the adversary is given a pair $(m, (\eta, v))$ from a XOR-\ac{MAC}.
+She could try to output $(m', (\eta, v \xor a))$, trying to guess an $a$ such that $h_s(m) \xor a = h_s(m')$, so that this is still a valid tag.
+If $a$ is hard to find (as should be), we have ``almost xor universality''.
+Almost universality is the special case where $a = 0$.
+
+From a \ac{PRF} family we can get a \ac{MAC} for \ac{FIL} messages (a \ac{FIL}-\ac{MAC}).
+\Cref{tab:vil-fil-mac} compares the constructions we have seen earlier for \ac{FIL}-\acp{MAC} and \ac{VIL}-\acp{MAC}.
+
+\begin{table}
+	\centering
+	\begin{tabular}{c|c|c|c}
+		& \acs{FIL}-\acs{PRF} & \acs{FIL}-\acs{MAC} & \acs{VIL}-\acs{MAC} \\
+		\hline
+		$\F(\H)$ & $\checkmark$ & $\checkmark$ &  \\
+		\acs{CBC}-\acs{MAC} &  & $\checkmark$ &  \\
+		E-\acs{CBC}-\acs{MAC} & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+		XOR-\acs{MAC} &  & $\checkmark$ & $\checkmark$
+	\end{tabular}
+	\caption{Constructions for \acs{FIL}-\acs{PRF}, \acs{FIL}-\acs{MAC}, and \acs{VIL}-\acs{MAC}.}
+	\label{tab:vil-fil-mac}
+\end{table}
+
+\ac{CBC}-\ac{MAC} cannot be extended securely to \ac{VIL}.
+As an example, take
+\begin{equation}
+	\text{CBC-MAC}(m_1 || \dots || m_t) =
+	F_k(m_t \xor \dots \xor F_k(m_1) \dots ).
+\end{equation}
+If we have $(m_1, \phi_1)$, with $\phi_1 = F_k(m_1)$.
+We could then take $m_2 = m_1 || \phi_1 \xor m_1$, and $\phi_1$ would be a valid authenticator for $m_2$:
+\begin{equation*}
+	\text{CBC-MAC}(m_2) = F_k(m_1 \xor \phi_1 \xor F_k(m_1)) = F_k(m_1 \xor \cancel \phi_1 \xor \cancel \phi_1) = F_k(m_1) = \phi_1.
+\end{equation*}
+
+\section{\aclp{CCA} and Authenticated Encryption}
+
+In \ac{CCA} security, the adversary is allowed to choose the cyphertext, and to see its decryption.
+
+\begin{definition}[\acs{CCA}-security]
+	Let $\SKESchemeTuple$ be a \ac{SKE} scheme, and consider the following game $\CCAGame(\lambda, b)$:
+	\begin{enumerate}
+		\item $k \rand{\{0,1\}^{\lambda}}$;
+		\item $(m_0, m_1) \from A^{\SKEEnc(k, \cdot), \SKEDec(k, \cdot)} (1^{\lambda})$;
+		\item $c \from \SKEEnc(k, m_b)$;
+		\item $b' \from A^{\SKEEnc(k, \cdot), \SKEDec^{\star}(k, \cdot)} (1^{\lambda}, c)$ where $\SKEDec^{\star}$ does not accept $c$.
+	\end{enumerate}
+	$\SKEScheme$ is \ac{CCA}-secure if for all \ac{PPT} adversaries $\Adv$ we have that
+	\begin{equation*}
+		\CCAGame(\lambda, 0) \CompInd \CCAGame(\lambda, 1). \qedhere
+	\end{equation*}
+\end{definition}
+
+\ac{CCA}-security implies a property called \emph{malleability}: if you change a bit the cyphertext you don't get similar messages.
+
+\begin{claim} \label{clm:ske-cca-example}
+	The \ac{SKE} scheme consisting of $\SKEEnc(k, m) = (r, F_k(r) \xor m)$ (for random $r$) and $\SKEDec(k, (c_1, c_2)) = F_k(c_1) \xor c_2 = m$ is not \ac{CCA}-secure.
+\end{claim}
+
+\begin{proof}[Proof of \cref{clm:ske-cca-example}]
+	\begin{enumerate}
+		\item Output $m_0 = 0^n$ and $m_1 = 1^n$;
+		\item get $c = (c_1, c_2) = (r, F_k(r) \xor m_b)$;
+		\item let $c_2' = c_2 \xor 10^{n-1}$;
+		\item query $\SKEDec(k, (c_1, c_2'))$ (which is different from $c$);
+		\item if you get $10^{n-1}$, output $0$, else output $1$.
+	\end{enumerate}
+	This always works:
+	\begin{align*}
+		\SKEDec(k, (c_1, c_2'))
+		& =
+		F_k(c_1) \xor c_2'
+		=
+		\overbrace{F_k(c_1) \xor c_2}^{m_b} \xor 10^{n-1} 
+		\\
+		& =
+		m_b \xor 10^{n-1}
+		= 10^{n-1}
+		\iff
+		m_b = 0^n.
+	\end{align*}
+\end{proof}
+
+We'll build now Authenticated Encryption.
+It's both \ac{CPA} and \ac{INT}, \ie it's hard for the adversary to generate a valid cyphertext not queried to the encryption oracle.
+
+As an exercise, formalise the fact that \ac{CPA} and \ac{INT} imply \ac{CCA}, \ie reduce \ac{CCA} to \ac{CPA}.
+
+Any \ac{CPA}-secure encryption scheme, together with a \ac{MAC}, gives you \ac{CCA} security.
+This is called an encrypted \ac{MAC}.
+
+\begin{construction}[Encrypted \acs{MAC}]
+	Consider the encryption scheme $\SKESchemeTuple[1]$, with key space $\K_1$, and the \ac{MAC} $\GenericMACSchemeTuple[2]$, with key space $\K_2$.
+	We build the encryption scheme $\CCASchemeTuple$, with key space $\K' = \K_1 \times \K_2$ as follows:
+	\begin{enumerate}
+		\item $\CCAEnc(k', m) = (c, \phi) = c'$, with $c \from \SKEEnc(k_1, m)$ and $\phi \from \GenericMac(k_2, c)$;
+		\item $\CCADec(k', (c, \phi))$ checks if $\GenericMac(k_2, c) = \phi$: if not, it outputs $\bot$, else it outputs $\SKEDec(k_1, c)$. \qedhere
+	\end{enumerate}
+\end{construction}
+
+\begin{theorem} \label{thm:cpa-int-encrypted-mac}
+	If $\SKEScheme[1]$ is \ac{CPA}-secure and $\GenericMACScheme[2]$ is strongly \ac{UFCMA}-secure, then $\CCAScheme$ is \ac{CPA} and \ac{INT}.
+\end{theorem}
+
+\begin{framed}
+	{\bfseries I don't know what I wrote here?}
+
+	Strong \ac{UFCMA} security means you output $(m^{\star}, \phi^{\star})$ where the couple was never asked.
+	So if you know $(m, \phi)$, you can output $(m, \phi')$.
+\end{framed}
+
+\begin{proof}[Proof of \cref{thm:cpa-int-encrypted-mac}]
+	We need to show that $\CCAScheme$ is both \ac{CPA} and \ac{INT}.
+	\begin{enumerate}
+		\item The proof for \ac{CPA} is just a reduction to the \ac{CPA}-security of $\SKEScheme[1]$.
+			Assume $\Adv'$ breaks \ac{CPA}-security of $\CCAScheme$, we can construct $\Adv_1$ which breaks \ac{CPA} of $\SKEScheme[1]$.
+
+			$\Adv_1$ picks a key to impersonate the \ac{MAC}, then for each message $m$ gets its encryption $c$ from $\SKEScheme[1]$, and then does $\GenericMac$ of $c$ to get the authenticator $\phi$.
+			Then it returns $(c, \phi)$ to $\Adv'$.
+			When it receives $m_0, m_1$ from $\Adv'$, it receives $c^{\star}$ from $\SKEScheme[1]$, computes its $\GenericMac$, and gives the result to $\Adv'$.
+			Then it outputs whatever $\Adv'$ outputs.
+		\item For \ac{INT}, assume $\Adv''$ breaking \ac{INT} of $\CCAScheme$, we can build $\Adv_2$ which breaks \ac{INT} of $\GenericMACScheme[2]$.
+
+			We ask $\Adv_2$ the encryption of $m$.
+			$\Adv_2$ picks a key $k$, computes $\SKEEnc(k, m) = c$, and gives $c$ to the $\GenericMac(\cdot)$ oracle.
+			Then it gives $(c, \phi)$ to $\Adv''$.
+			Later on, $\Adv''$ gives $\Adv_2$ some $(c^{\star}, \phi^{\star})$, which is a valid validator if $\CCAScheme$ is not \ac{INT}, so $\Adv_2$ has broken $\GenericMACScheme[2]$. \qedhere
+	\end{enumerate}
+\end{proof}
+
+\section{\aclp{PRP}}
+
+Block cyphers are \acp{PRP}, a function family that is a \ac{PRF} but also a permutation.
+A \ac{PRP} family cannot be distinguished from a true permutation.
+For a \emph{strong} \ac{PRP} family, the adversary has access to the inverse of the permutation.
+From \acp{PRF} we can build both \acp{PRP} and strong \acp{PRP}.
+
+\begin{definition}[Feistel]
+	Let $F: \{0,1\}^n \to \{0,1\}^n$, then the Feistel function (\cref{fig:feistel}) is defined as
+	\begin{equation*}
+		\Feistel(\underbrace{x,y}_{2n}) = (y, x \xor F(y)) = (\underbrace{x', y'}_{2n}). \qedhere
+	\end{equation*}
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.8\linewidth]{drawings/feistel.eps}
+		\caption{The Feistel permutation.}
+		\label{fig:feistel}
+	\end{figure}
+\end{definition}
+
+It's easy to see that the Feistel function is invertible:
+\begin{equation*}
+	\Feistel^{-1} (x', y') = (F(x') \xor y', x') = (\cancel{F(y)} \xor \cancel{F(y)} \xor x, y) = (x, y).
+\end{equation*}
+We can ``cascade'' several Feistel functions, to create a Feistel network.
+Take $F_1, \dots, F_l$, and define the following function:
+\begin{equation*}
+	\Feistel[\F]\left[l\right] (x,y) = \Feistel[F_l](\Feistel[F_{l-1}]( \dots \Feistel[F_{1}](x,y) \dots))
+\end{equation*}
+and its inverse:
+\begin{equation*}
+	\Feistel[\F]^{-1}\left[l\right] (x',y') = \Feistel[F_1]^{-1}(\dots \Feistel[F_{l-1}]^{-1}(\Feistel[F_{l}]^{-1}(x',y')) \dots).
+\end{equation*}
+
+\begin{theorem}[Luby-Rackoff]
+	If $\F = \{F_k : \{0,1\}^{n} \to \{0,1\}^{n}\}_{k \in \{0,1\}^{\lambda}}$ is a \ac{PRF}, then $\Feistel[\F]\left[3\right]$ is a \ac{PRP} and $\Feistel[\F]\left[4\right]$ is a strong \ac{PRP}.
+\end{theorem}
