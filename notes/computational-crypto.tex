@@ -843,6 +843,13 @@ This is called an encrypted \ac{MAC}.
 	\end{enumerate}
 \end{proof}
 
+The approach to \ac{CCA} consisting of Encrypt-then-\ac{MAC} works.
+Other approaches don't work in general:
+\begin{itemize}
+	\item Encrypt-and-\ac{MAC}, which is what \ac{SSH} does, \ie $c \from \SKEEnc(k_c, m)$ and $\phi \from \GenericMac(k_s, m)$;
+	\item \ac{MAC}-then-Encrypt, which is what \ac{TLS} does, \ie $\phi \from \GenericMac(k_s, m)$ and $c \from \SKEEnc(k_c, m || \phi)$.
+\end{itemize}
+
 \section{\aclp{PRP}}
 
 Block cyphers are \acp{PRP}, a function family that is a \ac{PRF} but also a permutation.
@@ -880,3 +887,197 @@ and its inverse:
 \begin{theorem}[Luby-Rackoff]
 	If $\F = \{F_k : \{0,1\}^{n} \to \{0,1\}^{n}\}_{k \in \{0,1\}^{\lambda}}$ is a \ac{PRF}, then $\Feistel[\F]\left[3\right]$ is a \ac{PRP} and $\Feistel[\F]\left[4\right]$ is a strong \ac{PRP}.
 \end{theorem}
+
+We will prove only that $\Feistel[\F]\left[3\right]$ is a \ac{PRP}.
+\begin{theorem} \label{thm:feistel-3-prp}
+	If $\F$ is a \ac{PRF}, $\Feistel[\F]\left[3\right]$ is a \ac{PRP}.
+\end{theorem}
+Recall that 
+\begin{equation*}
+	\Feistel[\F]\left[3\right] =
+	\Feistel[F_{k_3}] \left( \Feistel[F_{k_2}] \left( \Feistel[F_{k_1}] (x,y) \right) \right).
+\end{equation*}
+
+\begin{proof}[Proof of \cref{thm:feistel-3-prp}]
+	Consider these experiments:
+	\begin{align*}
+		H_0 & : (x,y) \overset{\Feistel[F_{k_1}]}{\to} (x_1, y_1) \overset{\Feistel[F_{k_2}]}{\to} (x_2, y_2) \overset{\Feistel[F_{k_3}]}{\to} (x_3, y_3) \\
+		H_1 & : (x,y) \overset{\Feistel[R_1]}{\to} (x_1, y_1) \overset{\Feistel[R_2]}{\to} (x_2, y_2) \overset{\Feistel[R_3]}{\to} (x_3, y_3).
+	\end{align*}
+
+	$H_2$ is just like $H_1$, but we stop if $y_1$ ``collides''.
+	A collision happens when we have $(x,y) \to (x_1 = y, y_1 = x \xor R_1(y))$, and $y_1 = y$.
+
+	In $H_3$ we replace $y_2 = R_2(y_1) \xor x_1$ with $y_2 \rand{\{0,1\}^{n}}$, and set $x_2 = y_1$.
+
+	In $H_4$ we replace $y_3 = R_3(y_2) \xor x_2$ with $y_3 \rand{\{0,1\}^{n}}$, and set $x_3 = y_2$.
+
+	In $H_5$ we directly map $(x,y) \overset{\overline{R}}{\to} (x_3, y_3)$, with $\overline{R} \rand{\R(2n \to 2n)}$ being a random permutation.
+
+	First claim: $H_0 \CompInd H_1$, since we replaced the \ac{PRF} with truly random functions.
+	The proof is the usual proof by hybrids.
+
+	Second claim: $H_1 \CompInd H_2$.
+	Consider the event $E$ of a collision, defined as ``$\exists (x,y) \neq (x',y')$ such that $x \xor R_1(y) = x' \xor R_1(y')$, \ie $x \xor x' = R_1(y) \xor R_1(y')$''.
+	If $y = y'$, there can't be a collision, so we can assume that $y \neq y'$.
+	So the probability of a collision is:
+	\begin{equation*}
+		\Pr{E} = \Pr{R_1(y) \xor R_1(y') = x \xor x'} \le 2^{-n}.
+	\end{equation*}
+
+	Third claim: $H_2 \CompInd H_3$.
+	In $H_2$, $y_1$ is just a stream of independent values.
+	Since $y_1$ never collides and $R_2$ is random, all $R_2(y_1)$ are uniform and independent, and so is $y_2 = R_2(y_1) \xor x_1$.
+
+	Fourth claim: $H_3 \CompInd H_4$.
+	Now $y_3$ is random, and $x_3 = y_2$.
+	It suffices that $y_2$ never collides, since $R_3(y_2)$ is a sequence of one time pad keys.
+	\begin{equation*}
+		\Pr{y_2 \text{ collides}} \le \binom{q}{2} 2^{-n}.
+	\end{equation*}
+
+	Fifth claim: $H_4 \CompInd H_5$.
+	Just notice that $H_4$ is simply a random function from $2n$ bits to $2n$ bits, and $H_5$ is a random permutation.
+	They can only be distinguished if there is a collision in $H_4$, which again has negligible probability.
+\end{proof}
+
+A strong \ac{PRP} $P$ leads to \ac{CCA} security with the following construction:
+\begin{itemize}
+	\item $\SKEEnc(k,m) = P(k, m || r)$, with $m,r \in \{0,1\}^{n}$; 
+	\item $\SKEDec(k, c) = P^{-1}(k,c)$ and take the first $n$ bits.
+\end{itemize}
+
+\subsection{Domain Extension for \aclp{PRP}}
+
+Assume we have a message $m = m_1 || \dots || m_t$, with $m_i \in \{0,1\}^{n}$, and you are given a \ac{PRP} from $n$ bits to $n$ bits.
+\begin{itemize}
+	\item One natural thing to do is \ac{ECB}.
+		Let $c = c_1 || \dots || c_t$ with $c_i = P_k(m_i)$.
+		This is very fast, parallelisable, but insecure (since it's deterministic).
+	\item \ac{CFB}: sample $c_0$ at random, then let $c_i = P_k(c_{i-1}) \xor m_i$.
+		This is \ac{CPA} secure and parallelisable for decryption (but not for encryption).
+	\item \ac{CBC}: sample $c_0$ at random, then let $c_i = P_k(c_{i-1} \xor m_i)$.
+		This is also \ac{CPA} secure.
+		Note that if you output all $c_i$ this does not work as a \ac{MAC} (recall that \ac{CBC}-\ac{MAC} outputs just $c_t$).
+	\item \ac{CTR}-mode: sample $r \rand{[N]}$, with $N = 2^{n}$.
+		Let $c_i = P_k(r + i - 1 \mod N) \xor m_i$, and output $c_0 || c_1 || \dots || c_t$ with $c_0 = r$.
+		For decryption, compute $m_i = P_k(c_0 + i - 1 \mod N) \xor c_i$.
+\end{itemize}
+
+\begin{theorem} \label{thm:ctr-mode-cpa-secure-vil}
+	If $\F$ is a \ac{PRF} family, then \ac{CTR}-mode is \ac{CPA}-secure for \ac{VIL}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:ctr-mode-cpa-secure-vil}]
+	Consider the game $H_0(\lambda, b)$, defined as:
+	\begin{enumerate}
+		\item $k \rand{\{0,1\}^{\lambda}}$;
+		\item the adversary asks encryption queries, for messages $m = m_1 || \dots || m_t$:
+			\begin{itemize}
+				\item $c_0 = r \rand{[N]}$ (with $N = 2^n$);
+				\item $c_i = F_k(r+i-1 \mod N) \xor m_i$;
+				\item output $c_0 || c_1 || \dots || c_t$.
+			\end{itemize}
+		\item challenge: the adversary gives $(m_0^{\star}, m_1^{\star})$, and take $m_b^{\star} = m_{b_1}^{\star} || \dots m_{b_t}^{\star}$ (both messages have the same length);
+		\item compute $c^{\star}$ from $m_b^{\star}$ and output to adversary;
+		\item adversary asks more encryption queries, then it outputs $b'$.
+	\end{enumerate}
+	We want to show that $H_0(\lambda,0) \CompInd H_1(\lambda,1)$.
+
+	First, we define the hybrid $H_1(\lambda, b)$ which samples $R \rand{\R(n \to n)}$ and uses $R(\cdot)$ in place of $F_k(\cdot)$.
+	The proof that $H_0(\lambda, b) \CompInd H_1(\lambda, b)$ is a usual proof by reduction to security of the \ac{PRF}.
+	Assume there exists a distinguisher $\Distinguisher$ for $H_0$ and $H_1$, we build a distinguisher $\Distinguisher'$ for the \ac{PRF}, which has access to some oracle that is either $F_k(\cdot)$ or $R(\cdot)$ for random $R$.
+	$\Distinguisher'$ plays the game defined above with $\Distinguisher$ using the oracle, and outputs whatever it outputs, thus distinguishing the \ac{PRF}.
+
+	Now consider the hybrid $H_2(\lambda)$, which outputs a uniformly random challenge cyphertext $c^{\star} \rand{\{0,1\}^{n(t+1)}}$.
+	We claim that $H_1(\lambda, b) \StatInd H_2(\lambda)$ for $b \in \{0,1\}$, \ie they are statistically indistinguishable: we accept unbounded adversaries that can only ask a polynomial number of queries.
+
+	Consider $c^{\star}$, and the values of $R(r^{\star}), R(r^{\star} + 1), \dots, R(r^{\star} + t^{\star} - 1)$.
+	Then, consider the $i$-th encryption query, $c^i$, and the values of $R(r_i), R(r_i+1), \dots, R(r_i + t_i - 1)$.
+	If $R(r_i + j)$ is always different from $R(r^{\star} + j')$ for any $j'$, this is basically \ac{OTP}.
+	So, calling $E$ the event ``$\exists j_1, j_2$ such that $R(r_i + j_1) = R(r^{\star} + j_2)$'', it suffices to show that $\Pr{E} \le \negl{\lambda}$.
+
+	Assume there are $q$ queries, and fix a maximum length $t$ of the queried messages, and let $E_i$, for $i \in [q]$, be the event of an overlap happening at query $i$.
+	Clearly $\Pr{E} \le \sum_{i=1}^{q} \Pr{E_i}$.
+	For $E_i$ to happen, we must have that $r^{\star} - t + 1 \le r_i \le r^{\star} + t - 1$ (this is not tight!).
+	So the size of the interval in which $r_i$ must be is $2t-1$.
+	Then, $\Pr{E_i} = \frac{2t - 1}{2^n}$, and $\Pr{E} \le q \frac{2t - 1}{2^n}$, which is negligible.
+\end{proof}
+
+\section{\aclp{CRH}}
+
+When we saw domain extensions for \acp{PRF}, we showed that $\F(\H)$ is a \ac{PRF} if $\F$ is a \ac{PRF} and $\H$ is \ac{AU}.
+This doesn't work for \acp{MAC}: to extend the domain of a \ac{MAC} we need \acp{CRH}.
+
+A hash function is used to compress $l$ bits into $n$ bits, with $n << l$.
+A family of hash functions is defined as $\H = \{ H_s : \{0,1\}^{l} \to \{0,1\}^{n}\}_{s \in \{0,1\}^{\lambda}}$.
+\ac{AU} means that it's hard to find a collision for an adversary that does not know $s$.
+Collision resistance means that it's hard to find a collision even if the adversary knows $s$.
+
+\begin{definition}[\acl{CRH}]
+	Let $\H = \{h_s : \{0,1\}^{l} \to \{0,1\}^{n}\}_{s \in \{0,1\}^{\lambda}}$ be a family of functions, and consider the game $\CRHGame(\lambda)$, defined as
+	\begin{enumerate}
+		\item $s \rand{\{0,1\}^{\lambda}}$;
+		\item $(x,x') \from \Adv (1^{\lambda}, s)$;
+		\item output $1$ if $x \neq x' \land h_s(x) = h_s(x')$.
+	\end{enumerate}
+	$\H$ is a \ac{CRH} if for all \ac{PPT} adversaries $\Adv$ there is a negligible function $\epsilon(\lambda)$ such that
+	\begin{equation*}
+		\Pr{\CRHGame(\lambda) = 1} \le \epsilon(\lambda). \qedhere
+	\end{equation*}
+\end{definition}
+
+We'll show how to construct \acp{CRH} in two steps.
+\begin{enumerate}
+	\item Start with a compression function $h_s : \{0,1\}^{2n} \to \{0,1\}^{n}$ and obtain a domain extension, \ie a function $h_s' : \{0,1\}^{\star} \to \{0,1\}^{n}$.
+	\item Build a collision resistant compression function.
+\end{enumerate}
+There are two famous constructions.
+
+\begin{construction}[\acl{MD}] \label{cons:merkle-damgard}
+	It goes from $tn$ bits to $n$ bits, for fixed $t$.
+	Let $m = x_1 || \dots || x_t$, and define intermediate outputs $y_i$ for $i \in [0,t]$.
+	We define $y_0 = 0^n$, and $y_i = h_s(x_i || y_{i-1})$.
+	The output is $y = y_t$.
+	% add drawing
+\end{construction}
+
+\begin{construction}[Merkle tree]
+	It goes from $2^d n$ bits to $n$ bits, with $d$ being the height of the tree.
+	% add drawing
+\end{construction}
+With the Merkle tree one could give a partially hashed version of a file.
+
+\begin{theorem} \label{thm:merkle-damgard-crh}
+	\ac{MD} (\cref{cons:merkle-damgard}) is a \ac{CRH} $\H' = \{ h_s' : \{0,1\}^{tn} \to \{0,1\}^{n} \}$ if the function $\H = \{ h_s : \{0,1\}^{2n} \to \{0,1\}^{n} \}$ is collision resistant.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:merkle-damgard-crh}]
+	Let $\Adv'$ be an adversary capable of outputting $x \neq x'$ such that $h_s'(x) = h_s'(x')$.
+	Then we can construct $\Adv$ breaking $\H$ (which is collision resistant).
+
+	If $h_s'(x) = h_s'(x')$ but $x \neq x'$, there must be some $j \in [1,t]$ (with $x = x_1 || \dots || x_t$ and $x' = x_1' || \dots || x_t'$) such that $(x_j, y_{j-1}) \neq (x_j', y_{j-1}')$, but after that they are equal.
+	Then $h_s(x_j, y_{j-1}) = h_s(x_j', y_{j-1}')$, which is a collision.
+\end{proof}
+
+\begin{construction}[Strengthened \acl{MD}] \label{cons:strengthened-merkle-damgard}
+	Strengthened \ac{MD} is defined as
+	\begin{equation*}
+		h_s'(x_1 || \dots || x_t) =
+		h_s(\repr{t} || h_s(x_t || \dots h_s(x_1 || 0^n) \dots)). \qedhere
+	\end{equation*}
+\end{construction}
+With the strengthened \ac{MD} we have suffix-free messages, which give us a \ac{VIL} \ac{MD}.
+
+\begin{theorem} \label{thm:strengthened-merkle-damgard-crh}
+	Strengthened \ac{MD} (\cref{cons:strengthened-merkle-damgard}) is collision resistant.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:strengthened-merkle-damgard-crh}]
+	Assume there is a collision $x = x_1 || \dots || x_t \neq x' = x_1' || \dots || x_{t'}'$, \ie they are such that $h_s'(x) = h_s'(x')$.
+	Two cases are possible:
+	\begin{enumerate}
+		\item if $t = t'$, we have already shown this in the proof of \cref{thm:merkle-damgard-crh};
+		\item if $t \neq t'$, the collision is on $h_s(\repr{t} || y_t)$ and $h_s(\repr{t'} || y_{t'}')$. \qedhere
+	\end{enumerate}
+\end{proof}
