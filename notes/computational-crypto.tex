@@ -1030,7 +1030,7 @@ Collision resistance means that it's hard to find a collision even if the advers
 We'll show how to construct \acp{CRH} in two steps.
 \begin{enumerate}
 	\item Start with a compression function $h_s : \{0,1\}^{2n} \to \{0,1\}^{n}$ and obtain a domain extension, \ie a function $h_s' : \{0,1\}^{\star} \to \{0,1\}^{n}$.
-	\item Build a collision resistant compression function.
+	\item Build a \ac{CR} compression function.
 \end{enumerate}
 There are two famous constructions.
 
@@ -1049,12 +1049,12 @@ There are two famous constructions.
 With the Merkle tree one could give a partially hashed version of a file.
 
 \begin{theorem} \label{thm:merkle-damgard-crh}
-	\ac{MD} (\cref{cons:merkle-damgard}) is a \ac{CRH} $\H' = \{ h_s' : \{0,1\}^{tn} \to \{0,1\}^{n} \}$ if the function $\H = \{ h_s : \{0,1\}^{2n} \to \{0,1\}^{n} \}$ is collision resistant.
+	\ac{MD} (\cref{cons:merkle-damgard}) is a \ac{CRH} $\H' = \{ h_s' : \{0,1\}^{tn} \to \{0,1\}^{n} \}$ if the function $\H = \{ h_s : \{0,1\}^{2n} \to \{0,1\}^{n} \}$ is \ac{CR}.
 \end{theorem}
 
 \begin{proof}[Proof of \cref{thm:merkle-damgard-crh}]
 	Let $\Adv'$ be an adversary capable of outputting $x \neq x'$ such that $h_s'(x) = h_s'(x')$.
-	Then we can construct $\Adv$ breaking $\H$ (which is collision resistant).
+	Then we can construct $\Adv$ breaking $\H$ (which is \ac{CR}).
 
 	If $h_s'(x) = h_s'(x')$ but $x \neq x'$, there must be some $j \in [1,t]$ (with $x = x_1 || \dots || x_t$ and $x' = x_1' || \dots || x_t'$) such that $(x_j, y_{j-1}) \neq (x_j', y_{j-1}')$, but after that they are equal.
 	Then $h_s(x_j, y_{j-1}) = h_s(x_j', y_{j-1}')$, which is a collision.
@@ -1070,7 +1070,7 @@ With the Merkle tree one could give a partially hashed version of a file.
 With the strengthened \ac{MD} we have suffix-free messages, which give us a \ac{VIL} \ac{MD}.
 
 \begin{theorem} \label{thm:strengthened-merkle-damgard-crh}
-	Strengthened \ac{MD} (\cref{cons:strengthened-merkle-damgard}) is collision resistant.
+	Strengthened \ac{MD} (\cref{cons:strengthened-merkle-damgard}) is \ac{CR}.
 \end{theorem}
 
 \begin{proof}[Proof of \cref{thm:strengthened-merkle-damgard-crh}]
@@ -1080,4 +1080,306 @@ With the strengthened \ac{MD} we have suffix-free messages, which give us a \ac{
 		\item if $t = t'$, we have already shown this in the proof of \cref{thm:merkle-damgard-crh};
 		\item if $t \neq t'$, the collision is on $h_s(\repr{t} || y_t)$ and $h_s(\repr{t'} || y_{t'}')$. \qedhere
 	\end{enumerate}
+\end{proof}
+
+\begin{construction}[Davies-Meyer]
+	$\H_E(s,x) = E_s(x) \xor x$ where $E_{(\cdot)} (\cdot)$ is a block cypher.
+\end{construction}
+For this construction to be \ac{CR}, it should be hard to find $(x,s) \neq (x',s')$ such that $E_{s}(x) \xor x = E_{s'}(x') \xor x'$.
+
+There's something strange going on: a block cypher is a \ac{PRP}, and \ac{OWF} give us \ac{PRP}, but we know that it's impossible to get \ac{CRH} from \ac{OWF}.
+Furthermore, this is actually insecure for concrete \acp{PRP}.
+Let $E$ be a \ac{PRP}, and define $E'$ such that $E'(0^n, 0^n) = 0^n$ and $E'(1^n, 1^n) = 1^n$, and otherwise $E'(x) = E(x)$.
+This is still a \ac{PRP}, but $E'(0^n, 0^n) \xor 0^n = E'(1^n, 1^n) \xor 1^n$.
+
+We must assume that we have no bad keys.
+This is called the \ac{ICM}.
+
+In the \ac{ICM}, one has a truly random permutation $E_{(\cdot)}(\cdot)$ for all keys.
+When the adversary asks for $(s_1, x_1)$, choose random $y_1 \rand{\{0,1\}^n}$ and set $E_{s_1}(x_1) = y_1$.
+On later query $(s_1,x_i)$, pick $y_i \rand{\{0,1\}^{n} \setminus \bigcup_{j=1}^{i} \{y_j\}}$, and set $E_{s_1} (x_i) =  y_i$.
+
+\begin{theorem} \label{thm:davies-meyer-cr-icm}
+	Davies-Meyer is \ac{CR} in \ac{ICM}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:davies-meyer-cr-icm}]
+	As usual, we consider a series of experiments.
+	\begin{equation*}
+		H_0(\lambda) \equiv \CRDMGame(\lambda).
+	\end{equation*}
+	$\Adv$ makes two types of queries: forward queries, in the form $(s,x)$, to get $E_s(x)$, and backward queries, in the form $(s,y)$, to get $E^{-1}_s(y)$.
+	Imagine of keeping the value of $z = x \xor y$.
+
+	Now, we define $H_1(\lambda)$: after picking $y$ for some $(s,x)$, we don't remove $y$ from the range (and the same for backward queries).
+
+	The first claim is that, assuming $\Adv$ asks $q$ queries,
+	\begin{equation*}
+		\abs{\Pr{H_0(\lambda) = 1} - \Pr{H_1(\lambda) = 1}} \le \frac{q^2}{2} 2^{-n}.
+	\end{equation*}
+	To verify this, note that $H_0$ and $H_1$ are distinguishable if and only if a collision happens in $E_s(\cdot)$ or in $E^{-1}_s(\cdot)$.
+
+	$H_2(\lambda)$: check for collisions in $z = x \xor y$.
+	If not all $z$ values are distinct, abort.
+
+	The second claim is that
+	\begin{equation*}
+		\abs{\Pr{H_1(\lambda) = 1} - \Pr{H_2(\lambda) = 1}} \le \frac{q^2}{2} 2^{-n}.
+	\end{equation*}
+	Verification is as usual.
+
+	$H_3(\lambda)$: when $\Adv$ outputs $(x,s), (x',s')$ collision, check that $(x,s,y,z)$ and $(x',s',y',z')$ are in the table.
+	If not, define the entries.
+
+	Third claim:
+	\begin{equation*}
+		\abs{\Pr{H_2(\lambda) = 1} - \Pr{H_3(\lambda) = 1}} \le \frac{4 q}{2^n}.
+	\end{equation*}
+	$y$ can collide with $q$ values, with probability $\frac{q}{2^n}$.
+	The same goes for $z, y', z'$, so we get $\frac{4 q}{2^n}$.
+
+	$H_4(\lambda)$: there are no collisions on $z$.
+	$\Pr{H_4(\lambda) = 1} = 0$ since $(x,s,y,z), (x',s',y',z') \implies z \neq z'$.
+
+	$H_3 \CompInd H_4$, and we're done.
+\end{proof}
+
+\section{\aclp{CFP}}
+
+We introduce a new assumption: \acp{CFP}.
+A claw is a pair of functions $(f_1, f_0)$ and two values $(x_1,x_0)$ such that $f_1(x_1) = f_0(x_0)$, with $f_1 \neq f_0$.
+
+\begin{definition}[\acl{CFP}]
+	A \ac{CFP} is a tuple $\CFPTuple$ where $\pk \rand{\Gen(1^{\lambda})}$ defines a domain $\X_{\pk}$, and $f_0(\pk, \cdot)$ and $f_1(\pk, \cdot)$ are permutations over $\X_{\pk}$.
+
+	Consider the game $\CFPGame(\lambda)$, defined as:
+	\begin{enumerate}
+		\item $\pk \rand{\Gen(1^{\lambda})}$;
+		\item $(x_0, x_1) \from \Adv(\pk)$;
+		\item output 1 $\iff f_0(\pk, x_0) = f_1(\pk, x_1)$.
+	\end{enumerate}
+	$\Pi$ is claw-free if for all \ac{PPT} adversaries $\Adv$
+	\begin{equation*}
+		\Pr{\CFPGame(\lambda) = 1} \le \epsilon(\lambda). \qedhere
+	\end{equation*}
+\end{definition}
+
+
+
+
+
+
+
+\section{\acl{WSS}}
+
+\ac{CDH} in bilinear groups.
+
+\begin{definition}[Bilinear Group]
+	$\BilinearGroupTuple \from \Bilin(1^{\lambda})$.
+	\begin{enumerate}
+		\item $\BilinearGroup$, $\BilinearGroupBis$ are groups of order $q$ with some efficient operation ``$\cdot$''.
+			$T$ stands for target;
+		\item $g$ is a generator of $\BilinearGroup$;
+		\item $\BilinearMap : \BilinearGroup \times \BilinearGroup \to \BilinearGroupBis$ is a bilinear map, \ie
+			\begin{enumerate}
+				\item bilinearity: $\forall g, h \in \BilinearGroup$, $\forall a, b \in \Integers_q$,
+					\begin{equation*}
+						\BilinearMap(g^a, h^b) = \BilinearMap(g, h)^{ab};
+					\end{equation*}
+				\item non-degeneracy: $\BilinearMap(g,g) \neq 1$ for generator $g$. \qedhere
+			\end{enumerate}
+	\end{enumerate}
+\end{definition}
+
+\begin{observation}
+	They are pairing on elliptic curves and \ac{CDH} is believed to hold in such groups.
+	\ac{DDH} comes easy in $\BilinearGroup$ with a bilinear map.
+\end{observation}
+
+\begin{construction}[\acl{WSS}]
+	\begin{itemize}
+		\item $\KeyGen(1^{\lambda})$: $\params = \BilinearGroupTuple \rand{\Bilin(1^{\lambda})}$, $a \rand{\Integers_q}$, $g_1 = g^a$, $g_2, \mu_1, \dots, \mu_k \rand{\BilinearGroup}$.
+			$\pk = (\params, g_1, g_2, \mu_0, \dots, \mu_k)$, $\sk = g_2^a$.
+		\item $\Sign(\sk, m)$:
+			let $m = (m[1], \dots, m[k]) \in \{0,1\}^{k}$,
+			and $\alpha(m) = \alpha_{\mu_0, \dots, \mu_k}(m) = \mu_0 \prod_{i=1}^{k} \mu_i^{m[i]}$.
+			Pick $r \rand{\Integers_q}$, output $\sigma = (g_2^a \cdot \alpha(m)^r, g^r) = (\sigma_1, \sigma_2)$.
+		\item $\Vrfy(\pk, (m, (\sigma_1, \sigma_2)))$: check that $\BilinearMap(g, \sigma_1) = \BilinearMap(\sigma_2, \alpha(m)) \cdot \BilinearMap(g_1, g_2)$.
+	\end{itemize}
+	Correctness:
+	\begin{align*}
+		\BilinearMap(g, \sigma_1) & = \BilinearMap(g, g_2^a \cdot \alpha(m)^r) = \BilinearMap(g, g_2^a) \cdot \BilinearMap(g, \alpha(m)^r) \\
+		& = \BilinearMap(g^a, g_2) \cdot \BilinearMap(g^r, \alpha(m)) = \BilinearMap(g_1, g_2) \cdot \BilinearMap(\sigma_2, \alpha(m)).
+	\end{align*}
+	Security: partitioning argument.
+	$\M = \{0,1\}^k$, and $X$ is some auxiliary information.
+	Given $X$, one can simulate signature on $m \in \M_1^X$ and moreover with high probability all queries will belong to $\M_1^X$.
+	Forgery will be in $\M_2^X$ which will allow to break \ac{CDH}.
+\end{construction}
+
+\begin{theorem} \label{thm:waters-ss-ufcma}
+	Under \ac{CDH}, \ac{WSS} is \ac{UFCMA}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:waters-ss-ufcma}]
+	Let $\Adv$ be a \ac{PPT} adversary capable of breaking \ac{WSS} with probability greater than $\frac{1}{p(\lambda)}$, with $p(\lambda) \in \poly(\lambda)$.
+	Consider the adversary $\B$ given $\params = \BilinearGroupTuple$, $g_1 = g^a$, $g_2 = g^b$, and which wants to compute $g^{ab}$.
+	$\B(\params, g_1, g_2)$:
+	\begin{enumerate}
+		\item set $l = k q_s$, with $q_s$ being the number of queries ($<< q$);
+		\item pick $x_0 \rand{[-kl, 0]}$ and $x_1, \dots, x_k \rand{[0,l]}$ integers, and $y_0, \dots, y_k \rand{\Integers_q}$;
+		\item set $\mu_i = g_2^{x_i} g^{y_i}$ for all $i \in [k]$, and define the functions
+			\begin{align*}
+				\beta(m) & = x_0 + \sum_{i=1}^{k} m[i] x_i, \\
+				\gamma(m) & = y_0 + \sum_{i=1}^{k} m[i] y_i;
+			\end{align*}
+		\item run $\Adv(\params, g_1, g_2, \mu_0, \dots, \mu_k)$;
+		\item upon a query $m \in \{0,1\}^{k}$ from $\Adv$:
+		\begin{itemize}
+			\item if $\beta = \beta(m) = 0 \mod q$, abort;
+			\item else $\gamma = \gamma(m)$, $r \rand{\Integers_q}$, and output
+				\begin{equation*}
+					\sigma = (\sigma_1, \sigma_2) = (g_2^{\beta r} \cdot g^{\gamma r} \cdot g_1^{- \gamma \beta^{-1}}, g^r \cdot g_1^{- \beta^{-1}});
+				\end{equation*}
+		\end{itemize}
+		\item when $\Adv$ outputs $(m^{\star}, (\sigma_1^{\star}, \sigma_2^{\star}))$:
+		\begin{itemize}
+			\item if $\beta(m^{\star}) \neq 0 \mod q$, abort;
+			\item else output
+				\begin{equation*}
+					\frac{\sigma_1^{\star}}{\left(\sigma_2^{\star}\right)^{\gamma(m^{\star})}}.
+				\end{equation*}
+		\end{itemize}
+	\end{enumerate}
+	If $\beta(m) \neq 0$, $\B$ aborts on output, but answers queries.
+	If $\beta(m) = 0$, $\B$ aborts on queries, but outputs result.
+
+	Public key has random distribution as desired: perfect simulation of $\pk$.
+
+	Conditioning on $\B$ not aborting, the following two holds:
+	\begin{enumerate}
+		\item \label{itm:waters-ss-ufcma:not-aborting:distr} signature answers have the right distribution;
+		\item \label{itm:waters-ss-ufcma:not-aborting:cdh} $\B$ breaks \ac{CDH}.
+	\end{enumerate}
+
+	To verify point~\ref{itm:waters-ss-ufcma:not-aborting:distr}:
+	$a = \log_{g}(g_1)$, $b = \log_{g}(g_2)$.
+	A signature $\sigma$ on $m$ is $\sigma = (\sigma_1, \sigma_2) = (g_2^a \cdot \alpha(m)^{\bar{r}}, g^{\bar{r}})$ for random $\bar{r} \rand{\Integers_q}$.
+	Take now $\bar{r} = r - \alpha \beta^{-1}$ and let $\beta = \beta(m)$, $\gamma = \gamma(m)$.
+	\begin{equation*}
+		\alpha(m) = \mu_0 \prod_{i=1}^{k} \mu_i^{m[i]} = g_2^{x_0} g^{y_0} \prod_{i = 1}^{k} (g_2^{x_i} g^{y_i})^{m[i]} = g_2^{\beta} g^{\gamma}.
+	\end{equation*}
+	\begin{align*}
+		\sigma_1 & = g_2^a \cdot \alpha(m)^{\bar{r}} =
+		g_2^a \cdot \alpha(m)^{r - \alpha \beta^{-1}} \\
+		& = \cancel{g_2^a} \cdot g_2^{\beta r} \cdot g^{\gamma r} \cdot \cancel{g_2^{-\alpha}} \cdot g^{-\alpha \gamma \beta^{-1}}
+		= g_2^{\beta r} \cdot g^{\gamma r} \cdot g_1^{- \gamma \beta^{-1}}
+	\end{align*}
+	\begin{equation*}
+		\sigma_2 = g^{\bar{r}} = g^{r} \cdot g^{-\alpha \beta^{-1}} = g^r \cdot g_1^{- \beta^{-1}}
+	\end{equation*}
+	Since $\bar{r} = r - \alpha \beta^{-1}$ is random, we get the same distribution.
+
+	To verify point~\ref{itm:waters-ss-ufcma:not-aborting:cdh}:
+	let $(\sigma_1^{\star}, \sigma_2^{\star})$ be the forgery such that $\beta(m^{\star}) = 0 \mod q$.
+	\begin{equation*}
+		\frac{\BilinearMap(g, \sigma_1^{\star})}{\BilinearMap(\sigma_2^{\star}, \alpha(m^{\star}))} =
+		\BilinearMap(g_1, g_2)
+	\end{equation*}
+	because it's valid.
+	Since $\BilinearMap(g_1, g_2) = \BilinearMap(g, g)^{ab}$ we have
+	\begin{align*}
+		\BilinearMap(g, g)^{ab} & =
+		\frac{
+			\BilinearMap\left(g, \sigma_1^{\star}\right)
+		}{
+			\BilinearMap\left(\sigma_2^{\star}, \alpha(m^{\star})\right)
+		} =
+		\frac{
+			\BilinearMap\left(g, \sigma_1^{\star}\right)
+		}{
+			\BilinearMap(\sigma_2^{\star}, \underbrace{g_1^{\beta(m^{\star})}}_{1} \cdot g^{\gamma(m^{\star})}))
+		}
+		=
+		\frac{
+			\BilinearMap\left(g, \sigma_1^{\star}\right)
+		}{
+			\BilinearMap\left((\sigma_2^{\star})^{\gamma(m^{\star})}, g\right)
+		} \\
+		& \implies
+		\BilinearMap\left(g, g^{ab}\right) =
+		\BilinearMap\left(g, \frac{\sigma_1^{\star}}{(\sigma_2^{\star})^{\gamma(m^{\star})}}\right)
+		\implies
+		g^{ab} = 
+		\frac{\sigma_1^{\star}}{(\sigma_2^{\star})^{\gamma(m^{\star})}}
+	\end{align*}
+
+	Next, we claim that $\B$ aborts with negligible probability.
+
+	To verify it, we see that $\B$ aborts if the following happens:
+	\begin{equation*}
+		E = \beta(m^{\star}) \neq 0
+		\lor
+		(\beta(m^{\star}) = 0 \land \beta(m_1) = 0)
+		\lor
+		\dots
+		\lor
+		(\beta(m^{\star}) = 0 \land \beta(m_{q_s}) = 0).
+	\end{equation*}
+	Since $\abs{\beta(m)} \le k l$ by definition of $\beta(\cdot)$ $\implies$ $\abs{\beta(m)} < q$ $\implies$ we drop the modulus.
+	By the union bound
+	\begin{equation*}
+		\Pr{E} \le \Pr{\beta(m^{\star}) \neq 0} +
+		\sum_{i=1}^{q_s} \Pr{\beta(m^{\star}) = 0 \land \beta(m_i) = 0}.
+	\end{equation*}
+	\begin{itemize}
+		\item Fix $x_1, \dots, x_k$ and $m^{\star}$, there is a single $x_0$ such that $\beta(m^{\star}) = 0$, thus
+			\begin{equation*}
+				\Pr{\beta(m^{\star}) \neq 0} = \frac{kl}{kl+1};
+			\end{equation*}
+		\item fix $i \in [q_s]$, and let $\bar{m} = m_i$.
+			Since $m^{\star} \neq m_i$, $\exists j : m^{\star}[j] \neq \bar{m}[j]$.
+			Assume without loss of generality that $m^{\star}[j] = 1 \land \bar{m}[j] = 0$.
+			Given arbitrary $x_1, \dots, x_{j-1}, x_{j+1}, \dots, x_k$ then
+			\begin{equation*}
+				(\beta(m^{\star}) = \land \beta(\bar{m}) = 0)
+				\iff
+				\begin{pmatrix}
+					x_0 + x_j = - \sum_{i \neq j} x_i m^{\star}[i] \\
+					x_0 = - \sum_{i \neq j} x_i \bar{m}[i]
+				\end{pmatrix}
+			\end{equation*}
+			$\exists !$ solution.
+			\begin{equation*}
+				\Pr{\beta(m^{\star}) = 0 \land \beta(m_i) = 0} = \frac{1}{kl + 1} \cdot \frac{1}{l + 1}.
+			\end{equation*}
+			So the probability of aborting is:
+			\begin{equation*}
+				\Pr{E} \le \frac{kl}{kl + 1} + q_s \cdot \frac{1}{kl+1} \cdot \frac{1}{l+1}
+			\end{equation*}
+			which gives us the probability of not aborting:
+			\begin{align*}
+				\Pr{\bar{E}} 
+					& \ge
+				1 - \frac{kl}{kl+1} - q_s \cdot \frac{1}{kl+1} \cdot \frac{1}{l+1}
+					\\
+					& =
+				\frac{1}{kl+1} \left( \cancel{kl} + 1 - \cancel{kl} - \frac{q_s}{l+1} \right)
+					=
+				\frac{1}{kl+1} \left( 1 - \frac{q_s}{l+1} \right) \tag{$l = k q_s$}
+					\\
+					& =
+				\frac{1}{kl+1} \left( 1 - \frac{l}{(l+1) k} \right)
+					\ge
+				\frac{1}{4 k q_s + 2}
+					=
+				\frac{1}{p'(\lambda)}
+			\end{align*}
+			with $p'(\lambda) \in \poly(\lambda)$.
+
+			Finally, the probability that $\B$ breaks \ac{CDH}:
+			\begin{equation*}
+				\Pr{\B \text{ breaks \acs{CDH}}} = \underbrace{\frac{1}{p(\lambda)}}_{\text{breaks \acs{WSS}}} \cdot \underbrace{\frac{1}{p'(\lambda)}}_{\text{not abort}} \in \poly(\lambda)
+			\end{equation*}
+	\end{itemize}
 \end{proof}

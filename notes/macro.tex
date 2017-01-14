@@ -15,6 +15,7 @@
 \newcommand{\from}{\leftarrow}
 
 \newcommand{\A}{\mathcal{A}}
+\newcommand{\B}{\mathcal{B}}
 \newcommand{\C}{\mathcal{C}}
 \newcommand{\D}{\mathcal{D}}
 \newcommand{\F}{\mathcal{F}}
@@ -42,6 +43,7 @@
 \newcommand{\KGen}{\mathrm{KGen}}
 \newcommand{\KeyGen}{\mathrm{KeyGen}}
 \newcommand{\Mac}{\mathrm{Mac}}
+\newcommand{\Sign}{\mathrm{Sign}}
 \newcommand{\Vrfy}{\mathrm{Vrfy}}
 \newcommand{\Enc}{\mathrm{Enc}}
 \newcommand{\Dec}{\mathrm{Dec}}
@@ -86,7 +88,11 @@
 \newcommand{\CPAGame}{\Game^{\scriptstyle \text{cpa}}_{\SKEScheme,\Adv}}
 \newcommand{\CCAGame}{\Game^{\scriptstyle \text{cca}}_{\SKEScheme,\Adv}}
 
+\newcommand{\CFPTuple}{\Pi = (\Gen, f_0, f_1)}
+\newcommand{\CFPGame}{\Game^{\scriptstyle \text{CF}}_{\Pi, \Adv}}
+
 \newcommand{\CRHGame}{\Game^{\scriptstyle \text{CR}}_{\H,\Adv}}
+\newcommand{\CRDMGame}{\Game^{\scriptstyle \text{CR}}_{{\scriptstyle \text{DM}}, \Adv}}
 
 \newcommand{\UFCMAGame}{\Game^{\scriptstyle \text{ufcma}}_{\GenericMACScheme,\Adv}}
 
@@ -103,6 +109,19 @@
 \newcommand{\Field}{\mathbb{F}}
 \newcommand{\GroupTuple}{(\Group\commag\commaq)}
 \newcommand{\GroupGen}{\GroupTuple \from \mathrm{GroupGen}(1^{\lambda})}
+
+\newcommand{\Bilin}{\mathrm{Bilin}}
+\newcommand{\BilinearGroup}{\Group}
+\newcommand{\BilinearGroupBis}{\BilinearGroup_{T}}
+\newcommand{\BilinearMap}{\hat{e}}
+\newcommand{\BilinearGroupTuple}{\left( \BilinearGroup, \BilinearGroupBis, q, g, \BilinearMap \right)}
+
+\newcommand{\WatersKGen}{\mathrm{BiGen}}
+
+\newcommand{\pk}{pk}
+\newcommand{\sk}{sk}
+
+\newcommand{\params}{params}
 
 \newcommand{\pr}{\mathop{\mathrm{Pr}}}
 \renewcommand{\Pr}[2][]{\ensuremath{\pr\limits_{#1} \left[ {#2} \right]}}
