@@ -10,6 +10,8 @@
 \usepackage{mathtools}
 \usepackage{cancel}
 
+\setcounter{tocdepth}{2}
+
 \hypersetup{colorlinks=false}
 
 \theoremstyle{plain}
@@ -19,6 +21,7 @@
 \newtheorem{fct}{Fact}
 \newtheorem{clm}{Claim}
 \newtheorem{obs}{Observation}
+\newtheorem{prop}{Proposition}
 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}
@@ -49,3 +52,6 @@
 \newenvironment{observation}{\begin{obs}%
 \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
 {\popQED\end{obs}}
+\newenvironment{proposition}{\begin{prop}%
+\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+{\popQED\end{prop}}

@@ -2,12 +2,15 @@
 \newcommand{\ie}{\textit{i.e.}, }
 \newcommand{\eg}{\textit{e.g.}, }
 
+\newcommand{\divides}{\big|}
+
 \newcommand{\biglor}{\bigvee}
 \newcommand{\bigxor}{\bigoplus}
 
 \newcommand{\Definition}{\ensuremath{\mathop{=}\limits^{\scriptscriptstyle \triangle}}}
 
 \renewcommand{\vec}[1]{\overline{#1}}
+\newcommand{\norm}[1]{\left\lVert{#1}\right\rVert}
 
 \renewcommand{\epsilon}{\varepsilon}
 
@@ -29,11 +32,14 @@
 \newcommand{\Y}{\mathcal{Y}}
 \newcommand{\Z}{\mathcal{Z}}
 
+\newcommand{\RO}{\mathrm{RO}}
+
 \newcommand{\Naturals}{\mathbb{N}^{+}}
 \newcommand{\NaturalsZ}{\mathbb{N}}
 \newcommand{\Integers}{\mathbb{Z}}
 \newcommand{\Reals}{\mathbb{R}}
 \newcommand{\Bool}{\{0,1\}}
+\newcommand{\QRp}{\mathbb{QR}_p}
 
 \newcommand{\IntegersPrimeGroup}[1][p]{\Integers^{\star}_{#1}}
 
@@ -85,6 +91,9 @@
 \newcommand{\PKEDec}{\Dec}
 \newcommand{\PKESchemeTuple}{\PKEScheme = \left( \PKEKeyGen \comma \PKEEnc \comma \PKEDec \right)}
 
+\newcommand{\PKEGameCPA}{\Game_{\Adv, \Pi}^{\text{CPA \\ one-time}}}
+\newcommand{\PKEGameCCA}[1]{\Game_{\Adv, \Pi}^{\text{CCA{#1}}}}
+
 \newcommand{\CPAGame}{\Game^{\scriptstyle \text{cpa}}_{\SKEScheme,\Adv}}
 \newcommand{\CCAGame}{\Game^{\scriptstyle \text{cca}}_{\SKEScheme,\Adv}}
 
@@ -107,7 +116,7 @@
 
 \newcommand{\Group}{\mathbb{G}}
 \newcommand{\Field}{\mathbb{F}}
-\newcommand{\GroupTuple}{(\Group\commag\commaq)}
+\newcommand{\GroupTuple}{(\Group \comma g \comma q)}
 \newcommand{\GroupGen}{\GroupTuple \from \mathrm{GroupGen}(1^{\lambda})}
 
 \newcommand{\Bilin}{\mathrm{Bilin}}
@@ -131,6 +140,7 @@
 \newcommand{\poly}{\mathrm{poly}}
 
 \newcommand{\DotProduct}[2]{\left< {#1}, {#2} \right>}
+\newcommand{\Generator}[1]{\left< {#1} \right>}
 
 \newcommand{\repr}[1]{\left< {#1} \right>}
 

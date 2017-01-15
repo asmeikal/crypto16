@@ -1037,9 +1037,14 @@ There are two famous constructions.
 \begin{construction}[\acl{MD}] \label{cons:merkle-damgard}
 	It goes from $tn$ bits to $n$ bits, for fixed $t$.
 	Let $m = x_1 || \dots || x_t$, and define intermediate outputs $y_i$ for $i \in [0,t]$.
-	We define $y_0 = 0^n$, and $y_i = h_s(x_i || y_{i-1})$.
+	We define $y_0 = 0^n$, and $y_i = h_s(x_i || y_{i-1})$ (\cref{fig:merkle-damgard}).
 	The output is $y = y_t$.
-	% add drawing
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.8\linewidth]{drawings/merkle-damgard.eps}
+		\caption{The \acl{MD} \acl{CRH}.}
+		\label{fig:merkle-damgard}
+	\end{figure}
 \end{construction}
 
 \begin{construction}[Merkle tree]
@@ -1163,6 +1168,647 @@ A claw is a pair of functions $(f_1, f_0)$ and two values $(x_1,x_0)$ such that 
 		\Pr{\CFPGame(\lambda) = 1} \le \epsilon(\lambda). \qedhere
 	\end{equation*}
 \end{definition}
+
+We can now define a \ac{CR} compression function.
+
+\begin{construction}[\acl{CR} Compression Function from \acs{CFP}] \label{cons:cfp-cr}
+	Let $\CFPTuple$, and assume $\X_{\pk} = \{0,1\}^{n}$, and let $m \in \{0,1\}^l$.
+	Define $H_{\pk}$ as:
+	\begin{equation*}
+		H_{\pk} (x || m) = f_{m_l}( f_{m_{l-1}}( \cdots f_{m_1}(x) \cdots )).
+	\end{equation*}
+\end{construction}
+
+\begin{theorem} \label{thm:cons-cfp-cr}
+	If $\Pi$ is a \ac{CFP}, $H_{\pk}$ (\cref{cons:cfp-cr}) is collision resistant.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:cons-cfp-cr}]
+	Assume $\H$ is not \ac{CR}, we can then find a collision for $\Pi$, \ie we find $(x,m) \neq (x',m')$ such that $H_{\pk}(x || m) = H_{\pk} (x' || m')$.
+
+	Two cases are possible:
+	\begin{enumerate}
+		\item $m = m'$, so the sequence of permutations is the same, and also $x$ and $x'$ must be the same.
+			\begin{align*}
+				x & = f_{m_1}^{-1}( \cdots f_{m_l}^{-1}( y) \cdots ), \\
+				x' & = f_{m'_1}^{-1}( \cdots f_{m'_l}^{-1}( y) \cdots ).
+			\end{align*}
+		\item $m \neq m'$, then $\exists i$ such that $m_i \neq m_i'$, and
+			\begin{align*}
+				m & = m_l \dots m_i \dots m_1, \\
+				m' & = m_l \dots m_i' \dots m_1'
+			\end{align*}
+			\ie $m$ and $m'$ are equal from index $i+1$ to $l$.
+
+			Assume, without loss of generality, that $m_i = 0$ and $m_i' = 1$.
+			Since from $i+1$ we apply the same sequence of permutations, the collision must be on $i$.
+			Consider
+			\begin{align*}
+				y' & = f_{m_{i+1}}^{-1}( \dots f_{m_l}^{-1} (y) \dots), \\
+				x_0 & = f_{m_{i-1}} (\dots f_{m_1} (x) \dots ), \\
+				x_1 & = f_{m_{i-1}'} (\dots f_{m_1'} (x) \dots ).
+			\end{align*}
+			$x_0$ and $x_1$ are a claw, since $f_0(x_0) = y' = f_1(x_1)$. \qedhere
+	\end{enumerate}
+\end{proof}
+
+\section{\acl{RO} Model}
+
+The \ac{RO} is an ideal hash function.
+The only way to compute the hash is to query the oracle.
+The adversary is given $\RO(\cdot) \rand{\R(l \to m)}$.
+
+With \ac{RO} we can do
+\begin{itemize}
+	\item \ac{CRH}: define $H^{\RO}(x) = \RO(x)$;
+	\item \ac{PRG}: $G^{\RO}(x) = \RO(x || 0) || \RO(x || 1)$;
+	\item \ac{PRF}: $F^{\RO}(x) = \RO(k || x) = \Mac^{\RO}(k, x)$.
+\end{itemize}
+The last one is not secure with a real hash function.
+
+\section{Number Theory}
+
+We use modular arithmetic, with modulus some $n$, in $(\Integers_n, +, \cdot)$.
+
+$(\Integers_n, +)$ is a group, \ie it has an identity (or null) element, it's closed, commutative, associative, and has an inverse for each element.
+$(\Integers_n, \cdot)$ is not a group, as you don't have an inverse for everyone.
+
+\begin{lemma} \label{lem:gcd-invertible}
+	If $\gcd(a,n) > 1$, $a$ is not invertible in $(\Integers_n, \cdot)$.
+\end{lemma}
+
+\begin{proof}[Proof of \cref{lem:gcd-invertible}]
+	We can write $a = b \cdot q + (a \mod b)$.
+	Assume $a$ is invertible, then $a \cdot b = q \cdot n + 1$.
+	But then $\gcd(a,n)$ divides $a \cdot b - q \cdot n = 1$, which is a contradiction.
+\end{proof}
+
+Operations in $\Integers_n$ (at least multiplication and addition) are efficient.
+The inverse of an element can be computed with the euclidean algorithm.
+
+\begin{lemma} \label{lem:euclidean-algorithm}
+	Let $a,b$ such that $a \ge b > 0$, then
+	\begin{equation*}
+		\gcd(a,b) = \gcd(b, a \mod b). \qedhere
+	\end{equation*}
+\end{lemma}
+
+\begin{proof}[Proof of \cref{lem:euclidean-algorithm}]
+	It suffices to show that a common divisor of $a$ and $b$ also divides $a \mod b$, and that a common divisor of $b$ and $a \mod b$ also divides $a$.
+
+	Write $a = q \cdot b + a \mod b$.
+
+	For the first implication, a common divisor of $a$ and $b$ divides $a - q \cdot b = a \mod b$.
+
+	For the second implication, a common divisor of $b$ and $a \mod b$ divides $b \cdot q + a \mod b = a$.
+\end{proof}
+
+\begin{theorem} \label{thm:euclidean-algorithm-poly-time}
+	Given $a,b$ we can compute $\gcd(a,b)$ in polynomial time in $\max \{ \norm{a}, \norm{b} \}$.
+	Also, we can find $u, v$ such that $a \cdot u + b \cdot v = \gcd(a,b)$.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:euclidean-algorithm-poly-time}]
+	We can use \cref{lem:euclidean-algorithm} recursively:
+	\begin{align*}
+		a & = b \cdot q_{1} + r_{1} \tag{$0 \le r_1 < b$} \\
+		\gcd(a,b) & = \gcd(b, r_1) \tag{$r_1 = a \mod b$} \\
+		b & = r_{1} \cdot q_{2} + r_{2} \tag{$0 \le r_2 < r_1$} \\
+		\gcd(b,r_1) & = \gcd(r_1, r_2) \tag{$r_2 = b \mod r_1$} \\
+		& \dots \\
+		r_{i} & = r_{i-1} \cdot q_{i+1} + r_{i+1}.
+	\end{align*}
+	Repeat until $r_{t+1} = 0$, we then have that $\gcd(a,b) = r_t$.
+
+	We prove that $r_{i+2} \le \frac{r_i}{2}$ for all $0 \le i \le t-2$.
+	Clearly, $r_{i+1} < r_{i}$.
+	If we have that $r_{i+1} \le \frac{r_i}{2}$, then it's trivial.
+	If $r_{i+1} > \frac{r_i}{2}$, then
+	\begin{equation*}
+		r_{i+2} = r_i \mod r_{i+1} = r_i - q_{i+2} r_{i+1}
+		< r_i - r_{i-1} < r_i - \frac{r_i}{2} = \frac{r_i}{2}. \qedhere
+	\end{equation*}
+\end{proof}
+
+Take $a \in \Integers_n$ such that $\gcd(a,n) = 1$, then there are $u,v$ such that $a \cdot u + n \cdot v = \gcd(a,n) = 1$.
+But then $a \cdot u \equiv 1 \mod n$, so $u$ is the inverse of $a$.
+
+Another operation in $\Integers_n$ is modular exponentiation, \ie $a^b \mod n$.
+The square and multiply algorithm is polynomial.
+
+Write $b$ in binary, as $b_t b_{t-1} \dots b_0$, so $b \in \{0,1\}^{t+1}$.
+Since $b = \sum_{i = 0}^{t} b_i \cdot 2^i$, we can write
+\begin{align*}
+	a^b = a^{\sum_{i = 0}^{t} 2^i b_i} =
+	\prod_{i = 0}^{t} a^{2^i b_i} =
+	\prod_{i = 0}^{t} \left( a^{2^i} \right)^{b_i} =
+	a^{b_0} \left( a^2 \right)^{b_1} \left( a^4 \right)^{b_2} \dots \left( a^{2^t} \right)^{b_t}.
+\end{align*}
+We have $t$ multiplications and $t$ squares, so modular exponentiation happens in polynomial time.
+
+\begin{theorem}[Prime Number Theorem] \label{thm:prime-number-theorem}
+	\begin{equation*}
+		\Pi(x) = \text{``\# of primes $\le x$''} \ge \frac{x}{3 \log_2(x)}
+	\end{equation*}
+	which is roughly $\frac{x}{\log(x)}$.
+\end{theorem}
+
+\Cref{thm:prime-number-theorem} means that
+\begin{equation*}
+	\Pr{x \text{ is prime} : x \rand{2^{\lambda - 1}}} \ge \frac{\frac{2^{\lambda} - 1}{3 \log_2(2^{\lambda} - 1)}}{2^{\lambda - 1}} \approx \frac{1}{3\lambda}.
+\end{equation*}
+Furthermore, primality testing can be done efficiently.
+
+\begin{theorem}[Miller-Rabin '80s, Agramal-Kayer-Saxana '02]
+	You can test in polynomial time if $x$ is prime.
+\end{theorem}
+
+We can sample $x \rand{2^{\lambda} - 1}$, test primality, and eventually resample.
+\begin{equation*}
+	\Pr{\text{no output after $t$ samples}} \le \left( 1 - \frac{1}{3\lambda}\right)^{t} \le \left(\frac{1}{e} \right)^{\lambda} \in \negl{\lambda}
+\end{equation*}
+for $t = 3 \lambda^2$, since $\left( 1 - \frac{1}{x} \right)^x \le \frac{1}{e}$.
+
+Now, for some new number theoretic assumptions.
+
+\paragraph{Assumption.} Integer factorisation of the product of two $\lambda$-bit primes is a \ac{OWF}.
+\ac{NIST} recommendation is $\lambda \approx 2048$.
+
+We need cyclic groups.
+
+\begin{theorem}[Lagrange] \label{thm:lagrange}
+	If $H$ is a subgroup of $G$, then $\abs{H} \divides \abs{G}$.
+\end{theorem}
+
+We define the order of $a$ to b e the minimum $i$ such that $a^i \equiv 1 \mod n$.
+
+Consider $\Integers_n$.
+Note that $\abs{\Integers_n} = n$.
+We define
+\begin{equation*}
+	\Integers_n^{\star} = \{ a \in \Integers_n : a \text{ is invertible}\} =
+	\{ a \in \Integers_n : \gcd(a,n) = 1 \}.
+\end{equation*}
+$\abs{\Integers_n^{\star}} \Definition \varphi(n)$.
+If $n$ is a prime $p$, then $\Integers_p^{\star} = \{ 1, 2, \dots, p - 1\}$, and $\abs{\Integers_p^{\star}} = \varphi(p) = p-1$.
+
+\begin{corollary}
+	For all $a \in \Integers_n^{\star}$, we have
+	\begin{enumerate}
+		\item $a^b = a^{b \mod \varphi(n)} \mod n$;
+		\item $a^{\varphi(n)} = 1 \mod n$;
+		\item $a^{p-1} = 1 \mod p$. \qedhere
+	\end{enumerate}
+\end{corollary}
+
+$(\Integers_p^{\star}, \cdot)$ is cyclic, \ie $\exists$ a generator $g$ such that
+\begin{equation*}
+	\Integers_p^{\star} = \Generator{g} = \{ g^0, g^1, \dots, g^{p-2} \}.
+\end{equation*}
+Can we find a generator for $\Integers_p^{\star}$?
+We can do it if we know a factorisation of $p-1 = \prod_{i=1}^{t} p_i^{\alpha_i}$.
+Since $p_i \ge 2$, we have that $2^t \le p < 2^{\lambda+1}$, thus $t \le \lambda$.
+The algorithm requires $t$ steps.
+
+By \cref{thm:lagrange} we know that the order of any $y \in \Integers_p^{\star}$ divides $p-1$.
+Thus $y$ is not a generator $\iff \exists 1 \le i \le t$ such that
+\begin{equation*}
+	y^{\frac{p-1}{p_i}} \equiv q \mod p.
+\end{equation*}
+If this is the case, $y$ is a generator of a subgroup of $\Integers_p^{\star}$.
+This leads us to the next computational assumption.
+
+\paragraph{Assumption}
+The \ac{DL} problem, that is finding $x$ given $g^x \in \Group$, is hard, \ie for all \ac{PPT} $\Adv$,
+\begin{equation*}
+	\Pr{
+		y = g^{x'} :
+		\begin{array}{l}
+			\GroupGen; x \rand{\Integers_q}; \\
+			y = g^x; x' \from \Adv(y, \Group, g, q, 1^{\lambda})
+		\end{array}
+	}
+	\le \epsilon(\lambda).
+\end{equation*} 
+
+\subsection{Elliptic Curves}
+
+$\Group$ is a group of points over some cubic curve modulo $p$, \ie
+\begin{equation*}
+	y = x^3 + a x^2 + b x + c \mod p.
+\end{equation*}
+We can define an operation $+$ that makes $\Group$ a group.
+
+$\GroupGen$, and take as an example $\Group = \Integers_p^{\star}$ with $\cdot$ operation (multiplication).
+$q = p-1$.
+Take $y \in \Integers_p^{\star}$, we have that $y = g^x$ for $x \in \Integers_{p-1}$.
+
+In the general case, we have $y \in \Group$, and that $y = g^x$ for $x \in \Integers_q$.
+$q$ is the order of the group, while $g$ is a generator for $\Group$.
+Since $y = g^x$ we have that $\log_g(y) = x$ in $\Group$.
+
+$\Integers_p^{\star}$ is a special case, since modular exponentiation is a \ac{OWP}.
+
+\begin{definition}[\acl{CDH}]
+	Intuitively, given $(g, g^x, g^y)$, it's hard to find $g^{xy}$.
+	\ac{CDH} holds in $\Group$ if $\forall$ \ac{PPT} $\Adv$ we have
+	\begin{equation*}
+		\Pr{
+			z = g^{xy} :
+			\begin{array}{l}
+				\params = \GroupTuple ; x, y \rand{\Integers_q} ; \\
+				z \from \Adv(\params, g^x, g^y)
+			\end{array}
+		}
+		\le \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{definition}
+
+\begin{observation} \label{obs:cdh-dl}
+	\ac{CDH} $\implies$ \ac{DL}.
+\end{observation}
+
+\begin{proof}[Proof of \cref{obs:cdh-dl}]
+	Assume not, then \ac{DL} does not hold if \ac{CDH} holds.
+	But if we can compute $y = \log_g(g^y)$, then it's easy to find $g^{xy} = (g^x)^y$.
+\end{proof}
+Whether \ac{DL} $\implies$ \ac{CDH} or not is not known.
+
+\begin{definition}[\acl{DDH}]
+	Intuitively,
+	\begin{equation*}
+		\underbrace{(g, g^x, g^y, g^{xy})}_{\text{\acs{DDH} tuple}} \CompInd \underbrace{(g, g^x, g^y, g^z)}_{\text{non-\acs{DDH} tuple}}.
+	\end{equation*}
+	\ac{DDH} holds in $\Group$ if for all \ac{PPT} $\Adv$
+	\begin{align*}
+		& \left|
+			\Pr[x, y \rand{\Integers_q}]{\Adv(1^{\lambda}, \GroupTuple, g, g^x, g^y, g^{xy}) = 1}
+		\right. \\
+			&~-
+		\left.
+			\Pr[x, y,z \rand{\Integers_q}]{\Adv(1^{\lambda}, \GroupTuple, g, g^x, g^y, g^z) = 1}
+		\right|
+		\le \negl{\lambda}.
+	\end{align*}
+\end{definition}
+
+\begin{observation}
+	\ac{CDH} $\implies$ \ac{DDH} is true.
+	\ac{DDH} $\implies$ \ac{CDH} maybe is not true.
+\end{observation}
+
+\begin{proposition} \label{prop:ddh-not-zp}
+	\ac{DDH} does not hold in $\Integers_p^{\star}$.
+\end{proposition}
+
+\begin{proof}[Proof of \cref{prop:ddh-not-zp}]
+	Consider the set
+	\begin{equation*}
+		\QRp = \{ y \in \Integers_p^{\star} : y = x^2, x \in \Integers_p^{\star} \} = \{ y = g^z : z \text{ even} \}.
+	\end{equation*}
+	We can test if $y \in \QRp$ by checking if $y^{\frac{p-1}{2}} \equiv 1 \mod p$, because if $y = g^{2z'}$ then $y^{\frac{p-1}{2}} \equiv \left( g^{p-1} \right)^{z'} \equiv 1 \mod p$.
+	If not, then it must be that $y = 2 z' + 1$, and as such
+	\begin{equation*}
+		y^{\frac{p-1}{2}} \equiv \left( g^{p-1} \right)^{z'} \cdot g^{\frac{p-1}{2}} \equiv -1 \mod p.
+	\end{equation*}
+
+	Clearly,
+	\begin{equation*}
+		g^{xy} \in \QRp \iff g^{x} \in \QRp \lor g^y \in \QRp.
+	\end{equation*}
+	Thus $g^{xy} \in \QRp$ with probability $\frac{3}{4}$, but $g^z \in \QRp$ only with probability $\frac{1}{2}$.
+	So we have a distinguisher.
+
+	$\Adv_{\text{DDH}}(g, g^x, g^y, g^z)$ outputs 1 if $g^x$ or $g^y$ are in $\QRp$, but $g^z \not\in \QRp$, and $0$ otherwise.
+	$\Adv_{\text{DDH}}$ distinguishes with probability greater than $\frac{3}{8}$.
+\end{proof}
+This result can be improved by returning 0 if and only if $g^x$, $g^y$ and $g^z$ are compatible with $\QRp$ considerations, obtaining a distinguisher operating with probability $\frac{1}{2}$.
+
+If we take $\Group = \QRp$, with $q = \frac{p-1}{2}$, and where both $q$ and $p$ are prime (Sophie Germain primes), maybe \ac{DDH} holds there.
+This is not always true.
+
+\subsection{\acl{DH} Key Exchange}
+
+Take $\GroupGen$.
+Alice samples $x \rand{\Integers_q}$, and sends $\X = g^x$ to Bob.
+Bob samples $y \rand{\Integers_q}$, and sends $\Y = g^y$ to Alice.
+Alice computes $\K_A = \Y^x$, Bob computes $\K_B = \X^y$.
+It's easy to see that $\K_A = \K_B$.
+
+\ac{CDH} implies that an adversary can't compute the key.
+\ac{DDH} implies that the keys are indistinguishable from random.
+
+This is not secure against man in the middle attacks.
+Authentication would be needed, an initial fixed key.
+% add drawing of man in the middle attack here
+
+\subsection{\aclp{PRG}}
+
+$\GroupGen$, $x,y \rand{\Integers_q}$.
+From \ac{DDH} we know that
+\begin{equation*}
+	G_{g,q}(x,y) = (g^x, g^y, g^{xy}) \CompInd \U_{\Group^3}
+\end{equation*}
+so we have a \ac{PRG} $G_{g,q} : \Integers_q^2 \to \Group^3$.
+
+\begin{construction}[\acs{PRG} from \acs{DDH}] \label{cons:ddh-prg}
+	We can construct directly from \ac{DDH} a \ac{PRG} with polynomial stretch
+	\begin{equation*}
+		\G_{g,q} : \Integers_p^{l+1} : \Group^{2l+1}
+	\end{equation*}
+	defined as
+	\begin{equation*}
+		G_{g,q}(x, y_1, \dots, y_l) = 
+		(g^{x}, g^{y_1}, g^{x y_1}, \dots, g^{y_l}, g^{x y_l}). \qedhere
+	\end{equation*}
+\end{construction}
+
+\begin{theorem} \label{thm:ddh-prg}
+	If \ac{DDH} holds, \cref{cons:ddh-prg} is a \ac{PRG}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:ddh-prg}]
+	Using the standard hybrid argument, since \ac{DDH} is $\epsilon$-hard, we would use $l$ hybrids, obtaining that the above \ac{PRG} is $(\epsilon \cdot l)$-secure.
+	This proof is not tight, and we want to make a tight one.
+
+	We make a direct reduction to \ac{DDH}.
+	Let $\Adv_{\text{DDH}}$ be an adversary who is given $(g, g^x, g^y, g^z)$ with $z = \beta + xy$, where $\beta$ is either $0$ (so that is a \ac{DDH} tuple) or $\beta \rand{\Integers_q}$ (non-\ac{DDH} tuple).
+
+	We want to prove that
+	\begin{equation*}
+		(g^{x}, g^{y_1}, g^{x y_1}, \dots, g^{y_l}, g^{x y_l})
+		\CompInd
+		(g^{x}, g^{y}, g^{z}, \dots)
+	\end{equation*}
+	by generating exactly the first if the tuple is \ac{DDH}, and exactly the other one if the tuple is not \ac{DDH}.
+
+	For $j \in [l]$, pick $u_j, v_j \rand{\Integers_q}$, and define $g^{y_j} = \left( g^{y} \right)^{u_j} \cdot g^{v_j}$, and $g^{z_j} = \left( g^z \right)^{u_j} \cdot \left(g^x\right)^{v_j}$.
+	$\Adv_{\text{DDH}}$ returns the same as
+	\begin{equation*}
+		\Adv_{\text{PRG}}(g^x, g^{y_1}, g^{z_1}, \dots, g^{y_l}, g^{z_l}).
+	\end{equation*}
+
+	This trick generates many tuples in the correct way: just look at the exponents.
+	\begin{align*}
+		y_j
+		& = u_j \cdot y + v_j \\
+		z_j
+		& = u_j \cdot z + v_j \cdot x
+		= u_j \cdot \beta + u_j \cdot x \cdot y + v_j \cdot x \\
+		& = u_j \cdot \beta + x \cdot (u_j \cdot y + v_j)
+		= u_j \cdot \beta + x \cdot y_j
+	\end{align*}
+	which is either sampled random from $\Integers_q$ if $\beta \rand{\Integers_q}$, or $x y_j$ if $\beta = 0$, with $y_j \rand{\Integers_q}$.
+	So breaking the \ac{PRG} is equivalent to breaking \ac{DDH}, since $\Adv_{\text{DDH}}$ can perfectly simulate the \ac{PRG}, query $\Adv_{\text{PRG}}$ and break \ac{DDH}.
+\end{proof}
+
+\subsection{\acp{PRF}: Naor-Reingold}
+
+\begin{construction}[Naor-Reingold]
+	$\GroupGen$.
+	\begin{equation*}
+		\F_{\text{NR}} = \{ F_{q,g,\vec{a}} : \{0,1\}^{n} \to \Group \}_{\vec{a} \in \Integers_q^{n+1}}.
+	\end{equation*}
+	$\vec{a}$ is a vector of exponents.
+	\begin{equation*}
+		F_{q,g,\vec{a}}(x_1, \dots, x_n) = \left( g^{a_0} \right)^{\sum_{i=1}^{n} a_i x_i}. \qedhere
+	\end{equation*}
+\end{construction}
+\ac{DDH} $\implies$ $\F_{\text{NR}}$ is a \ac{PRF}.
+The proof can be sketched in a similar way as the proof for \ac{GGM}.
+Note that this is like an optimised version of \ac{GGM}.
+
+\subsection{Number Theoretic \acl{CFP}}
+
+\begin{construction} \label{cons:cfp-number-theory}
+	\begin{enumerate}
+		\item $\params = \GroupGen$;
+		\item $y \rand{\Group}$, $\pk = (\params, y)$;
+		\item define $f = (f_0, f_1)$, with:
+			\begin{align*}
+				f_0(\pk, x_0) & = g^{x_0}, \\
+				f_1(\pk, x_1) & = y \cdot g^{x_1}.
+			\end{align*}
+	\end{enumerate}
+\end{construction}
+$\Group = \Integers_p^{\star}$, $q = p-1$, $\X_{\pk} = \Integers_q$.
+Let $(x_0, x_1)$ be a claw, \ie $f_0(\pk, x_0) = f_1(\pk, x_1)$.
+Then
+\begin{equation*}
+	g^{x_0} = y \cdot g^{x_1} \implies y = g^{x_0 - x_1} \implies x_0 - x_1 = \log_g(y).
+\end{equation*}
+
+\begin{theorem} \label{thm:cfp-number-theory}
+	Under \ac{DL} \cref{cons:cfp-number-theory} is a \ac{CFP}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:cfp-number-theory}]
+	% add drawing
+	It's a simple simulation.
+\end{proof}
+
+\begin{equation*}
+	\H_{\pk}(x || m) = f_{m_l}( \dots f_{m_1} (x) \dots).
+\end{equation*}
+If $l = 1$, $\H_{\pk}(x || b) = f_b(\pk, m) = y^{b} g^x$.
+Collision means $(x, b) \neq (x', b')$ such that $y^b g^x = y^{b'} g^{x'}$.
+Clearly
+\begin{equation*}
+	b \neq b' \implies y^{b-b'} = g^{x'-x} \implies y = g^{(x'-x)(b-b')^{-1}}.
+\end{equation*}
+Take $\Group = \QRp$, $p = 2q + 1$, with $p$ and $q$ primes.
+Then $\exists (b - b')^{-1}$.
+\begin{align*}
+	\H_{\pk}(x_1, x_2) & = y^{x_1} g^{x_2} \\
+	\H_{\pk} & : \Integers_q^2 \to \Group.
+\end{align*}
+
+\section{\acl{PKE}}
+
+% add drawing of PKE
+
+There's also a thing called \emph{Hybrid Encryption}: encrypt key $k$ with $\pk$, then use $k$ for something like \ac{AES}.
+
+\begin{definition}[\acl{PKE} Scheme]
+	A \ac{PKE} scheme is a tuple $\PKESchemeTuple$, where
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $\PKEEnc(\pk, m) = c$;
+		\item $\PKEDec(\sk, c) = m$.
+	\end{enumerate}
+\end{definition}
+We require correctness from a \ac{PKE} scheme:
+\begin{equation*}
+	\Pr{
+		\PKEDec(\sk, \PKEEnc(\pk, m)) = m : (\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}
+	}
+	= 1 - \negl{\lambda}.
+\end{equation*}
+
+Now we define games for \ac{CPA}, \ac{CCA}1, \ac{CCA}2 for \ac{PKE}.
+
+\begin{definition}[\acl{CPA} for \acs{PKE}]
+	$\PKEGameCPA(\lambda, b)$:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $(m_0, m_1) \from \Adv(1^{\lambda}, \pk)$;
+		\item $c \from \PKEEnc(\pk, m_b)$;
+		\item $b' \from \Adv(\pk, c)$. \qedhere
+	\end{enumerate}
+\end{definition}
+
+\begin{definition}[\acl{CCA} 1 for \acs{PKE}]
+	$\PKEGameCCA{1}(\lambda, b)$:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $(m_0, m_1) \from \Adv^{\PKEDec(\sk, \cdot)}(1^{\lambda}, \pk)$;
+		\item $c \from \PKEEnc(\pk, m_b)$;
+		\item $b' \from \Adv(\pk, c)$. \qedhere
+	\end{enumerate}
+\end{definition}
+
+\begin{definition}[\acl{CCA} 2 for \acs{PKE}]
+	$\PKEGameCCA{2}(\lambda, b)$:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $(m_0, m_1) \from \Adv^{\PKEDec(\sk, \cdot)}(1^{\lambda}, \pk)$;
+		\item $c \from \PKEEnc(\pk, m_b)$;
+		\item $b' \from \Adv^{\PKEDec^{\star}(\sk, \cdot)}(\pk, c)$, where $\Dec^{\star}(\sk, c')$ outputs 1 if $c' = c$, and $\PKEDec(\sk, c')$ otherwise. \qedhere
+	\end{enumerate}
+\end{definition}
+
+For $r \in \{ \text{CPA, CCA1, CCA2} \}$ we say that $\Pi$ is SUCCESS if $\forall$ \ac{PPT} $\Adv$
+\begin{equation*}
+	\Game^{r}_{\Pi, \Adv} (\lambda, 0) \CompInd \Game^{r}_{\Pi, \Adv} (\lambda, 1).
+\end{equation*}
+
+In \ac{CCA}-1 no decryption queries can be made after receiving the cyphertext, while in \ac{CCA}-2 decryption queries can be made for cyphertexts different from the challenge cyphertext.
+\begin{equation*}
+	\text{CCA-2} \implies \text{CCA-1} \implies \text{CPA}.
+\end{equation*}
+The other way around is not true in general.
+
+\subsection{ElGamal \acs{PKE}}
+
+\begin{construction}[ElGamal] \label{cons:elgamal}
+	\begin{itemize}
+		\item $\GroupGen$, $x \rand{\Integers_q}$, $h = g^x$, $\pk = g$, $\sk = x$.
+			Public keys $= \left< \Group, q, g, h \right>$;
+		\item $\Enc(\pk, m, r)$: $r \rand{\Integers_q}$, $c = (c_1, c_2) = (g^r, h^r \cdot m)$;
+		\item $\Dec(\sk, (c_1, c_2)) = \frac{c_2}{c_1^x}$.
+	\end{itemize}
+	Note that
+	\begin{equation*}
+		\frac{c_2}{c_1^x} = \frac{h^r \cdot m}{\left( g^r \right)^x} = m. \qedhere
+	\end{equation*}
+\end{construction}
+
+\begin{theorem} \label{thm:elgamal-cpa}
+	Under \ac{DDH}, ElGamal (\cref{cons:elgamal}) is \ac{CPA}-secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:elgamal-cpa}]
+	Let $H_0(\lambda, b) = \Game_{\Pi,\Adv}^{\text{CPA}}(\lambda, b)$.
+	Then, let
+	\begin{equation*}
+		H_1(\lambda, b) :
+		\mathrm{ElGamal} \left(
+			\begin{array}{c}
+				r,z \rand{\Integers_q}; \; c = (g^r, g^z \cdot m_b); \\
+				b' \from \Adv(h, (c_1, c_2))
+			\end{array}
+		\right)
+	\end{equation*}
+	\ie we multiply the message for $g^z$ for random $z$.
+
+	First we claim that $\forall b \in \{0,1\}$, $H_0(\lambda, b) \CompInd H_1(\lambda, b)$.
+	To verify it, note that $(g^x, g^r, g^{xr}) \CompInd (g^x, g^y, g^z)$ by \ac{DDH}.
+	Assume $\Adv_{H_0, H_1}$ distinguishes the two, then $\Adv_{\text{DDH}}$, on input $(g^x, g^r, g^z)$, with $z$ either random or equal to $x \cdot r$, can forward $h = g^x$ to $\Adv_{H_0,H_1}$, receives the two messages $m_0$ and $m_1$, and return her $(g^r, g^z \cdot m_0)$, and output whatever $\Adv_{H_0,H_1}$ outputs.
+	% add drawing
+
+	The second claim is that $H_1(\lambda, 0) \CompInd H_1(\lambda, 1)$.
+	Since $g^z$ is random, so $g^z \cdot m_b$ is random, and hides $b$.
+\end{proof}
+
+A few properties of ElGamal:
+\begin{enumerate}
+	\item \label{itm:elgamal-homomorphic} homomorphic: given $\pk, (c_1, c_2), (c_1', c_2')$, with $(c_1,c_2) = \Enc(\pk, m)$ and $(c_1', c_2') = \Enc(\pk, m')$, note that
+		\begin{equation*}
+			(c_1 \cdot c_1', c_2 \cdot c_2') = (g^{r+r'}, h^{r+r'} (m \cdot m')) = \Enc(\pk, m \cdot m', r + r');
+		\end{equation*}
+	\item \label{itm:elgamal-blindness} blindness: given $c = (c_1, c_2) = (g^r, h^r \cdot m)$, compute $m' \cdot c_2 = h^r (m \cdot m')$.
+		You have that $(c_1, m' \cdot c_2) = \Enc(\pk, m \cdot m', r)$;
+	\item re-randomisability: given a cyphertext $c = (c_1, c_2)$ you can always re-randomise it.
+		Take $r' \rand{\Integers_q}$, and compute
+		\begin{equation*}
+			(g^{r'} \cdot c_1, h^{r'} \cdot c_2) = \Enc(\pk, m, r + r').
+		\end{equation*}
+\end{enumerate}
+Property~\ref{itm:elgamal-blindness} implies that ElGamal is not \ac{CCA}-2 secure: take $(c_1, c_2)$ challenge, ask for $\Dec(\sk, (c_1, c_2 \cdot m'))$, and look if the result is $m_0 \cdot m'$ or $m_1 \cdot m'$.
+
+Something cool comes from property~\ref{itm:elgamal-homomorphic}: fully homomorphic encryption.
+You can compute the encryption of the product of two messages.
+
+What if we could do it for every function?
+Assume having $c = \Enc(\pk, m)$, and to have some function $\mathrm{Eval}(\pk, c, f)$ which outputs $c' = \Enc(\pk, f(m))$.
+If you are in a group, it suffices to have addition and multiplication.
+You could build a client/server architecture, where the client $C$ wants to compute $f(x)$ without sharing $x$.
+Then $C$ computes $c = \mathrm{FHECPK}(x)$, sends $c,f$ to the server $S$, and obtains $c' = \mathrm{FHCPK}(f(x))$.
+
+\section{Factoring Assumption and \acs{RSA}}
+
+The factoring assumption will lead us to \ac{RSA}.
+But first, we introduce \acp{TDP}, which can give us \ac{PKE}.
+
+\begin{definition}[\acl{TDP}]
+	A \ac{TDP} is a tuple $(\Gen, f, f^{-1})$, where:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\Gen(1^{\lambda})}$ on some efficiently sampleable domain $\X_{\pk}$;
+		\item $f(\pk, x) = y$ is a permutation over $\X_{\pk}$;
+		\item $f^{-1}(\sk, y) = x$ is the trapdoor.
+	\end{enumerate}
+	A \ac{TDP} has two properties:
+	\begin{enumerate}
+		\item correctness:
+			\begin{equation*}
+				\forall x \in \X_{\pk} . f^{-1}(\sk, f(\pk, x)) = x;
+			\end{equation*}
+		\item one-way: for all \ac{PPT} $\Adv$,
+			\begin{equation*}
+				\Pr{
+					x' = x :
+					\begin{array}{c}
+					(\pk, \sk) \rand{\Gen(1^{\lambda})}; \;
+					x \rand{\X_{\pk}}; \\
+					y = f(\pk, x); \;
+					x' \from \Adv(\pk, y)
+					\end{array}
+				}
+				\le \negl{\lambda}.
+				\qedhere
+			\end{equation*}
+	\end{enumerate}
+\end{definition}
+Basically, we are able to invert $f$ if we have $\sk$.
+Note that $f$ is deterministic!
+We don't get \ac{PKE} directly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
