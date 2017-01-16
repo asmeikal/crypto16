@@ -210,7 +210,7 @@ Then, if $f'(x) = y || b$ for some $x$, it will always be that $h(x) = b$.
 
 But, given a \ac{OWF}, we can create a new \ac{OWF} for which $h$ is hard core.
 
-\begin{theorem}[\ac{GL}, 1983]
+\begin{theorem}[\ac{GL}, 1983] \label{thm:gl}
 	Let $f : \{0,1\}^n \to \{0,1\}^{n}$ be a \ac{OWF}, and define $g(x,r) = f(x) || r$ for $r \rand{\{0,1\}^{n}}$.
 	Then $g$ is a \ac{OWF}, and 
 	\begin{equation*}
@@ -1464,9 +1464,9 @@ Whether \ac{DL} $\implies$ \ac{CDH} or not is not known.
 \begin{proof}[Proof of \cref{prop:ddh-not-zp}]
 	Consider the set
 	\begin{equation*}
-		\QRp = \{ y \in \Integers_p^{\star} : y = x^2, x \in \Integers_p^{\star} \} = \{ y = g^z : z \text{ even} \}.
+		\QR = \{ y \in \Integers_p^{\star} : y = x^2, x \in \Integers_p^{\star} \} = \{ y = g^z : z \text{ even} \}.
 	\end{equation*}
-	We can test if $y \in \QRp$ by checking if $y^{\frac{p-1}{2}} \equiv 1 \mod p$, because if $y = g^{2z'}$ then $y^{\frac{p-1}{2}} \equiv \left( g^{p-1} \right)^{z'} \equiv 1 \mod p$.
+	We can test if $y \in \QR$ by checking if $y^{\frac{p-1}{2}} \equiv 1 \mod p$, because if $y = g^{2z'}$ then $y^{\frac{p-1}{2}} \equiv \left( g^{p-1} \right)^{z'} \equiv 1 \mod p$.
 	If not, then it must be that $y = 2 z' + 1$, and as such
 	\begin{equation*}
 		y^{\frac{p-1}{2}} \equiv \left( g^{p-1} \right)^{z'} \cdot g^{\frac{p-1}{2}} \equiv -1 \mod p.
@@ -1474,17 +1474,17 @@ Whether \ac{DL} $\implies$ \ac{CDH} or not is not known.
 
 	Clearly,
 	\begin{equation*}
-		g^{xy} \in \QRp \iff g^{x} \in \QRp \lor g^y \in \QRp.
+		g^{xy} \in \QR \iff g^{x} \in \QR \lor g^y \in \QR.
 	\end{equation*}
-	Thus $g^{xy} \in \QRp$ with probability $\frac{3}{4}$, but $g^z \in \QRp$ only with probability $\frac{1}{2}$.
+	Thus $g^{xy} \in \QR$ with probability $\frac{3}{4}$, but $g^z \in \QR$ only with probability $\frac{1}{2}$.
 	So we have a distinguisher.
 
-	$\Adv_{\text{DDH}}(g, g^x, g^y, g^z)$ outputs 1 if $g^x$ or $g^y$ are in $\QRp$, but $g^z \not\in \QRp$, and $0$ otherwise.
+	$\Adv_{\text{DDH}}(g, g^x, g^y, g^z)$ outputs 1 if $g^x$ or $g^y$ are in $\QR$, but $g^z \not\in \QR$, and $0$ otherwise.
 	$\Adv_{\text{DDH}}$ distinguishes with probability greater than $\frac{3}{8}$.
 \end{proof}
-This result can be improved by returning 0 if and only if $g^x$, $g^y$ and $g^z$ are compatible with $\QRp$ considerations, obtaining a distinguisher operating with probability $\frac{1}{2}$.
+This result can be improved by returning 0 if and only if $g^x$, $g^y$ and $g^z$ are compatible with $\QR$ considerations, obtaining a distinguisher operating with probability $\frac{1}{2}$.
 
-If we take $\Group = \QRp$, with $q = \frac{p-1}{2}$, and where both $q$ and $p$ are prime (Sophie Germain primes), maybe \ac{DDH} holds there.
+If we take $\Group = \QR$, with $q = \frac{p-1}{2}$, and where both $q$ and $p$ are prime (Sophie Germain primes), maybe \ac{DDH} holds there.
 This is not always true.
 
 \subsection{\acl{DH} Key Exchange}
@@ -1616,7 +1616,7 @@ Clearly
 \begin{equation*}
 	b \neq b' \implies y^{b-b'} = g^{x'-x} \implies y = g^{(x'-x)(b-b')^{-1}}.
 \end{equation*}
-Take $\Group = \QRp$, $p = 2q + 1$, with $p$ and $q$ primes.
+Take $\Group = \QR$, $p = 2q + 1$, with $p$ and $q$ primes.
 Then $\exists (b - b')^{-1}$.
 \begin{align*}
 	\H_{\pk}(x_1, x_2) & = y^{x_1} g^{x_2} \\
@@ -1793,6 +1793,323 @@ Basically, we are able to invert $f$ if we have $\sk$.
 Note that $f$ is deterministic!
 We don't get \ac{PKE} directly.
 
+The problem is that randomness is missing.
+Recall hardcore functions.
+\begin{construction} \label{cons:pke-tdp-hardcore}
+	Take $(\Gen, f, f^{-1})$, and let $h(\cdot)$ be hardcore for $f$.
+	Then do the following:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\Gen(1^{\lambda})}$;
+		\item $\Enc(\pk, m) = (f(\pk, r), h(r) \xor m) = (c_1, c_2)$ for $r \rand{\X_{\pk}}$;
+		\item $\Dec(\sk, (c_1, c_2)) = h(f^{-1}(\sk, c_1)) \xor c_2 = m$.
+	\end{enumerate}
+\end{construction}
+
+\begin{theorem}
+	If $(\Gen, f, f^{-1})$ is a \ac{TDP} and $h(\cdot)$ is hardcore for $f(\cdot)$, then the \ac{PKE} in \cref{cons:pke-tdp-hardcore} is \ac{CPA}-secure.
+\end{theorem}
+
+Since $(f(\pk, r), h(r)) \CompInd  (f(\pk, r), \U)$, this works.
+How many bits can we encrypt?
+
+We know from \cref{thm:gl} that we have at least a bit, for any \ac{TDP}.
+This can be extended to $O(\log(n))$ bits for any \ac{TDP}.
+For specific \acp{TDP} we can get some $\Omega(\lambda)$, like for factoring, \ac{RSA}, \ac{DL}.
+From a \ac{RO} one can get anything in $\{0,1\}^{\star}$.
+
+Let's now look at modular operations modulo $n$ (not necessarily prime).
+For example, take $m = p \cdot q$ with $p,q$ primes.
+
+\begin{theorem}[\acl{CRT}] \label{thm:crt}
+	Let $n_1, \dots, n_k$ be pairwise coprime numbers, and any $a_1, \dots, a_k$ such that $1 \le a_i \le n_i$ for all $i \in [k]$.
+	Then $\exists ! x$ such that $0 \le x < n = \prod_{i=1}^{k} n_i$ and such that $x \equiv a_i \mod n_i$ for all $i \in [k]$.
+\end{theorem}
+
+Special case: when $k = 2$, $n_1 = p$ and $n_2 = q$ are primes, and $n = p \cdot q$.
+Take any $x \in \Integers_n$.
+To $x$ correspond $x_p \equiv x \mod p$ and $x_q \equiv x \mod q$.
+This is a bijection: in fact, $\Integers_n \simeq \Integers_p \times \Integers_q$ (\ie they are isomorphic).
+
+Now, let's look at $f_e(x) = x^e \mod n$, for $0 \le x < n$.
+Recall that $\Integers_n^{\star} = \{ x \in \Integers_n : \gcd(x, n) = 1 \}$, and that $\# \Integers_n^{\star} = (p-1)(q-1) = \phi(n)$.
+\begin{fact}
+	If $\gcd(e, \phi(n)) = 1$, then $f_e(\cdot)$ is a permutation over $\Integers_n^{\star}$.
+\end{fact}
+We can indeed invert it.
+Since $\gcd(e, \phi(n)) = 1$, then $\exists d$ such that $d \cdot e = 1 \mod \phi(n)$.
+Consider $f_d^{-1}(x) = x^d \mod n$.
+\begin{align*}
+	f_d^{-1} \left( f_e(m) \right)
+	& = {f_e(m)}^d \mod n \\
+	& = \left(m^e\right)^d \mod n \\
+	& = m^{e \cdot d} \mod n.
+\end{align*}
+Since $d \cdot e \equiv 1 \mod \phi(n)$, then $d \cdot e = t \cdot \phi(n) + 1$ for some $t$.
+\begin{align*}
+	m^{e \cdot d} =
+	m^{t \phi(n) + 1} = m \cdot (\underbrace{m^{\phi(n)}}_{1 \mod n})^t = m \mod n.
+\end{align*}
+
+\paragraph{Assumption} $\RSAtuple$ is a \ac{TDP}.
+\begin{itemize}
+	\item $(n,d,e) \rand{\RSAGen(1^{\lambda})}$ with $n = p \cdot q$ and $e \cdot e \equiv 1 \mod \phi(n)$.
+		$(n,e) = \pk$, $(n,d) = \sk$;
+	\item $\RSAfun(e,x) = x^e \mod n$;
+	\item $\RSAinv(d,y) = y^d \mod n$.
+\end{itemize}
+We have seen that this is correct.
+The \ac{RSA} assumption is that, for all \ac{PPT} $\Adv$,
+\begin{equation*}
+	\Pr{
+		x = x' :
+		\begin{array}{c}
+		(n,d,e) \rand{\RSAGen(1^{\lambda})}; \;
+		\\
+		x \rand{\Integers_n^{\star}}; \;
+		y = x^e; \;
+		x' \from \Adv(e, n, y)
+		\end{array}
+	}
+	\le \negl{\lambda}.
+\end{equation*}
+
+Under this assumption, we have a 1-bit hardcore predicate, so a 1-bit \ac{PKE}.
+This is a different assumption than factoring.
+If you can factor $n$ you can compute $\phi(n)$ and thus $d$.
+\ac{RSA} implies factoring, but the other way around is not known.
+
+Textbook \ac{RSA}, \ie using $\RSAtuple$ as is does not work: it's deterministic!
+To do \ac{RSA} encryption in practice pick $r \rand{\{0,1\}^{t}}$ and define $\Enc(e,m) = \left(\hat{m}\right)^{e} \mod n$, where $\hat{m} = r || m$.
+\begin{itemize}
+	\item This is insecure if $t$ is $O(\log(\lambda))$.
+	\item If $m \in \{0,1\}$, this is secure under \ac{RSA}.
+	\item If $t$ is between $\log(\lambda)$ and $\abs{m}$, we don't actually know.
+\end{itemize}
+It's proven to be \ac{CCA}-secure in the \ac{RO} model. 
+
+\begin{construction}[PKCS\#1 V.2 - \acs{OAEP}] \label{cons:oaep}
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.8\linewidth]{drawings/oaep.eps}
+		\caption{\acl{OAEP}.}
+		\label{fig:oaep}
+	\end{figure}
+	\ac{OAEP}, shown in \cref{fig:oaep}.
+	This is basically a 2-Feistel $(G,H)$, with $G,H$ hash functions.
+	\begin{itemize}
+		\item $\lambda_0, \lambda_1 \in \Naturals$;
+		\item $m' = m || 0^{\lambda_1}$, $r \rand{\{0,1\}^{\lambda_0}}$;
+		\item $s = m' \xor G(r)$, $t = r \xor H(s)$;
+		\item $\hat{m} = s || t$;
+		\item $\Enc(\pk, m) = \hat{m}^{e}$. \qedhere
+	\end{itemize}
+\end{construction}
+
+\begin{theorem}
+	\ac{OAEP} (\cref{cons:oaep}) is \ac{CCA}-2 secure under \ac{RSA} in the \ac{RO} model.
+\end{theorem}
+
+\section{\acl{TDP} from Factoring}
+
+Let's see how to build a \ac{TDP} from factoring.
+We've seen that $f_e(x) = x^e \mod n$ is a \ac{TDP}.
+What about $e = 2$?
+We have $n = p \cdot q$ and $e \cdot d \equiv 1 \mod n$, but for $e = 2$, $f_2(x) = x^2 \mod n$ is not a permutation, since the image of $f_2(\cdot)$ is $\QR[n] = \{ y : y = x^2 \mod n \text{ for some } x \in \Integers_n^{\star}\}$, and $\QR[n] \subset \Integers_n^{\star}$.
+
+For some $p$ and some $n$, $f_2(\cdot)$ is actually a permutation. 
+By the \ac{CRT} (\cref{thm:crt}), $x \mapsto (x_p, x_q)$ with $x_p \equiv x \mod p$ and $x_q \equiv x \mod q$.
+Let us look at $f(x) = x^2 \mod p$.
+\begin{align*}
+	\Integers_p^{\star} & = \{
+		g^0, g^1, \dots, g^{\left(\frac{p-1}{2}\right) - 1}, g^{\frac{p-1}{2}}, \dots, g^{p-2}
+	\} \\
+	\QR & = \{
+		g^0, g^2, \dots, g^{p-3}, g^0, \dots
+	\}
+\end{align*}
+In $\QR$ are only even powers of the generator.
+This means that $\abs{QR} = \frac{p-1}{2}$.
+Note also that, since $g^{p-1} \equiv g^0 \equiv 1 \mod p$, we have that $g^{\frac{p-1}{2}} \equiv -1 \mod p$.
+There is an easy way to check if a number is a square modulo $p$.
+
+Fix $p, q \equiv 3 \mod 4$, so $p, q \equiv 4 t + 3$ for some $t \in \Naturals$.
+Consider $n = p \cdot q$, also called a Bloom integer.
+If this condition is met, squaring is a \ac{TDP} modulo $n$.
+
+Let $y = x^2 \mod p$, $x = y^{t+1} \mod p$.
+$\left(y^{t+1}\right)^2 = y^{2t+2}$.
+Now, since $p = 4t + 3$,
+\begin{equation*}
+	2t + 2 =
+	\frac{4t + 3 - 3}{2} + 2 =
+	\frac{p-3}{2} + 2 =
+	\frac{p+1}{2} =
+	\frac{p - 1}{2} + 1.
+\end{equation*}
+Now,
+\begin{equation*}
+	y^{2t+2} =
+	y^{\frac{p-1}{2} + 1} =
+	y^{\frac{p-1}{2}} \cdot y =
+	1 \cdot y = y.
+\end{equation*}
+So, $x = \pm y^{t+1} \mod p$.
+Note that $-1 = g^{\frac{p-1}{2}} \not\in \QR$, because $p = 4t + 3 \implies \frac{p-1}{2} = \frac{4t + 2}{2} = 2t+1$, which is odd, and thus $-1$ is not a square.
+
+Now, let's look at $f_{\mathrm{RABIN}}(x) = x^2 \mod n$ (quadratic residue modulo $n$, which is in $\QR$).
+\begin{equation*}
+	x^2 \mapsto (x_p^2, x_q^2).
+\end{equation*}
+Note that $f_{\mathrm{RABIN}}^{-1}(y)$ is one of the following:
+\begin{equation*}
+	\{ (x_p, x_q), (-x_p, x_q), (x_p, -x_q), (-x_p, -x_q) \}.
+\end{equation*}
+But doing this without knowing $p$ and $q$ is not easy.
+One can show that $y \in \QR[n] \iff x^2_p \in \QR[n], x^2_q \in \QR[n]$.
+Then it's easy to see that just one of the above pre-images is a square modulo $n$, and this is because only one between $x_p$ and $-x_p$ is a square (and same goes for $x_q$, $-x_q$).
+\begin{equation*}
+	\abs{\QR[n]} = \frac{\phi(n)}{4}.
+\end{equation*}
+With $p, q$ you can invert $f_{\mathrm{RABIN}}(x) = x^2 = y \mod n$, without them it's hard as factoring.
+
+\begin{lemma} \label{lem:factor-square}
+	Given $x, z$ such that $x^2 = z^2 = y \mod n$, and $x \neq \pm z$, we can factor $n$.
+\end{lemma}
+
+\begin{proof}[Proof of \cref{lem:factor-square}]
+	Recall that $f^{-1}(y) \in \{ (\pm x_p, \pm x_q) \}$.
+	Thus, if $x = (x_p, x_q)$, then $z \neq (-x_p, -x_q)$, and as such $x+z \in \{ (2x_p, 0), (0, 2x_q)\}$.
+
+	Assume $x+z = (2x_p, 0)$.
+	Then $x+z = 0 \mod q$, but $x+z \neq 0 \mod p$.
+	This means that $\gcd(x+z,n) = q$, \ie $x+z$ is a multiple of $q$, which is a divisor of $n$.
+	After finding $q$, we can find $p = \frac{n}{q}$.
+	Done.
+\end{proof}
+
+\begin{theorem} \label{thm:rabin-bloom-integers}
+	Under factoring over Bloom integers, $f_{\mathrm{RABIN}}$ is a \ac{TDP}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:rabin-bloom-integers}]
+	Assume not, then $\exists \Adv$ and some $p(\lambda) \in \poly(\lambda)$ such that
+	\begin{equation*}
+		\Pr{
+			z^2 = y :
+			\begin{array}{c}
+			(p, q, n) \rand{\Gen(1^{\lambda})}; \;
+			x \rand{\QR[n]}; \; \\
+			y = x^2 \mod n; \;
+			z \from \Adv(y, n)
+			\end{array}
+		}
+		\ge \frac{1}{p(\lambda)}.
+	\end{equation*}
+
+	$x$ is taken from $\QR[n]$ because $f_{\mathrm{RABIN}}$ is a permutation over $\QR[n]$.
+	Consider $\Adv^1(n)$, trying to factor $n$.
+	She chooses $x$, and lets $y = x^2 \mod n$.
+	Then she runs $\Adv(y, n)$ to get $z$.
+	If $z \neq \pm x$, which happens with probability $\frac{1}{2}$, $\Adv^1$ can factor $n$, with probability $\frac{1}{2} \cdot \frac{1}{p(\lambda)}$.
+\end{proof}
+
+\section{\acl{CS} Encryption (1998)}
+
+We will build a simplified version that is \ac{CCA}-1.
+We call it \ac{CS} lite.
+
+\begin{construction}[\acl{CS} lite]
+	Consider $\Pi = (\KGen, \Enc, \Dec)$, where
+	\begin{itemize}
+		\item $\KGen(1^{\lambda})$:
+			$\GroupGen$, then let $g_1 = g$, take $\alpha \rand{\Integers_q}$, and let $g_2 = g_1^{\alpha}$.
+			With high probability $g_2$ is a generator.
+			Now pick $x_1, x_2, y_1, y_2 \rand{\Integers_q}$.
+			Let $h_1 = g_1^{x_1} \cdot g_2^{y_1}$ and $h_2 = g_1^{x_2} \cdot g_2^{y_2}$.
+			Then, $\pk = (h_1, h_2, g_1, g_2)$ and $\sk = (x_1, y_1, x_2, y_2)$;
+		\item $\Enc(\pk, m)$:
+			pick $r \rand{\Integers_q}$, and output
+			\begin{equation*}
+				c = (g_1^r, g_2^r, h_1^r \cdot m, h_2^r) = (c_1, c_2, c_3, c_4).
+			\end{equation*}
+			$c_4 = h_2^r$ serves the purpose to ensure that the message is correct;
+		\item $\Dec(\sk, (c_1, c_2, c_3, c_4))$:
+			if $c_4 \neq c_1^{x_2} \cdot c_2^{y_2}$, return $\bot$;
+			else, return
+			\begin{equation*}
+				\frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}}.
+			\end{equation*}
+	\end{itemize}
+	To verify correctness of the construction:
+	\begin{align*}
+		c_4 & =
+		h_2^r =
+		{(g_1^{x_2} \cdot g_2^{y_2})}^r =
+		{(g_1^r)}^{x_2} \cdot {(g_2^r)}^{y_2} =
+		c_1^{x_2} \cdot c_2^{y_2}, \\
+		c_3 & =
+		h_1^r \cdot m =
+		(g_1^{x_1} \cdot g_2^{y_1})^{r} \cdot m =
+		(g_1^r)^{x_1} \cdot (g_2^r)^{y_1} \cdot m =
+		(c_1)^{x_1} \cdot (c_2)^{y_1} \cdot m.
+	\end{align*}
+\end{construction}
+
+\begin{theorem} \label{thm:cs-lite-cca-1}
+	Under \ac{DDH}, \ac{CS}-lite is \ac{CCA}-1 secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:cs-lite-cca-1}]
+	Start with $H_0(\lambda, b) = \PKEGameCCA{1}(\lambda, b)$, where $H_0(\lambda, b)$:
+	\begin{enumerate}
+		\item
+			$\GroupGen$,
+			$x_1, x_2, y_1, y_2 \rand{\Integers_q}$,
+			$g_1 = g$,
+			$g_2 = g_1^{\alpha}$,
+			$h_1 = g_1^{x_1} \cdot g_2^{y_1}$,
+			$h_2 = g_1^{x_2} \cdot g_2^{y_2}$,
+			$\pk = (g_1, g_2, h_1, h_2)$,
+			$\sk = (x_1, y_1, x_2, y_2)$;
+		\item $(m_0^{\star}, m_1^{\star}) \from \Adv^{\Dec(\sk, \cdot)} (1^{\lambda}, \pk)$, where you pick $r \rand{\Integers_q}$, and let
+			\begin{equation*}
+				c^{\star} =
+				(g_1^{r}, g_2^{r}, h_1^{r} \cdot m_b, h_2^{r}) =
+				(c_1^{\star}, c_2^{\star}, c_3^{\star}, c_4^{\star});
+			\end{equation*}
+		\item $b' \from \Adv(\pk, c^{\star})$.
+	\end{enumerate}
+
+	Now consider $H_1(\lambda, b)$, that changes just the way the cyphertext is computed.
+	Pick $r \rand{\Integers_q}$, and let $g_3 = g_1^r$, $g_4 = g_3^{\alpha} = g_2^{r}$.
+	Then
+	\begin{equation*}
+		c^{\star} = \left(g_3, g_4, g_3^{x_1} \cdot g_4^{y_1} \cdot m_b, g_3^{x_2} \cdot g_4^{y_2}\right).
+	\end{equation*}
+	Clearly, $H_0(\lambda, b) \equiv H_1(\lambda, b)$.
+	Just look at $c^{\star}$:
+	\begin{equation*}
+		c^{\star} =
+		(g_1^{r}, g_2^{r}, \underbrace{(g_1^{r})^{x_1} \cdot (g_2^r)^{y_1}}_{h_1^{r}} \cdot m_b, \underbrace{(g_1^{r})^{x_2} \cdot (g_2^{r})^{y_2}}_{h_2^r}).
+	\end{equation*}
+
+	Now, we define $H_2(\lambda, b)$, where instead of using $g_4$ we use $g_1^{r'} = g_2^{r''}$ for some random $r', r''$.
+	The next claim is that $H_1(\lambda, b) \CompInd H_2(\lambda, b)$, by reduction to the \ac{DDH}.
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1843,14 +2160,17 @@ We don't get \ac{PKE} directly.
 \end{observation}
 
 \begin{construction}[\acl{WSS}]
+	Consider $\Pi = (\KeyGen, \Sign, \Vrfy)$, where
 	\begin{itemize}
-		\item $\KeyGen(1^{\lambda})$: $\params = \BilinearGroupTuple \rand{\Bilin(1^{\lambda})}$, $a \rand{\Integers_q}$, $g_1 = g^a$, $g_2, \mu_1, \dots, \mu_k \rand{\BilinearGroup}$.
+		\item $\KeyGen(1^{\lambda})$:
+			$\params = \BilinearGroupTuple \rand{\Bilin(1^{\lambda})}$, $a \rand{\Integers_q}$, $g_1 = g^a$, $g_2, \mu_1, \dots, \mu_k \rand{\BilinearGroup}$;
 			$\pk = (\params, g_1, g_2, \mu_0, \dots, \mu_k)$, $\sk = g_2^a$.
 		\item $\Sign(\sk, m)$:
 			let $m = (m[1], \dots, m[k]) \in \{0,1\}^{k}$,
 			and $\alpha(m) = \alpha_{\mu_0, \dots, \mu_k}(m) = \mu_0 \prod_{i=1}^{k} \mu_i^{m[i]}$.
-			Pick $r \rand{\Integers_q}$, output $\sigma = (g_2^a \cdot \alpha(m)^r, g^r) = (\sigma_1, \sigma_2)$.
-		\item $\Vrfy(\pk, (m, (\sigma_1, \sigma_2)))$: check that $\BilinearMap(g, \sigma_1) = \BilinearMap(\sigma_2, \alpha(m)) \cdot \BilinearMap(g_1, g_2)$.
+			Pick $r \rand{\Integers_q}$, output $\sigma = (g_2^a \cdot \alpha(m)^r, g^r) = (\sigma_1, \sigma_2)$;
+		\item $\Vrfy(\pk, (m, (\sigma_1, \sigma_2)))$:
+			check that $\BilinearMap(g, \sigma_1) = \BilinearMap(\sigma_2, \alpha(m)) \cdot \BilinearMap(g_1, g_2)$.
 	\end{itemize}
 	Correctness:
 	\begin{align*}

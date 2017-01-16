@@ -3,55 +3,99 @@
 \usepackage{hyperref}
 \usepackage{amsfonts}
 \usepackage{amsthm}
+\usepackage{thmtools}
 \usepackage{acronym}
 \usepackage{multirow}
 \usepackage{cleveref}
 \usepackage{graphicx}
 \usepackage{mathtools}
 \usepackage{cancel}
+\usepackage{ifthen}
 
 \setcounter{tocdepth}{2}
 
 \hypersetup{colorlinks=false}
 
 \theoremstyle{plain}
-\newtheorem{thm}{Theorem}
-\newtheorem{lem}{Lemma}
-\newtheorem{cor}{Corollary}
-\newtheorem{fct}{Fact}
-\newtheorem{clm}{Claim}
-\newtheorem{obs}{Observation}
-\newtheorem{prop}{Proposition}
+\declaretheorem[qed=\ensuremath{\diamond}]{theorem}
+\declaretheorem[qed=\ensuremath{\diamond}]{lemma}
+\declaretheorem[qed=\ensuremath{\diamond}]{corollary}
+\declaretheorem[qed=\ensuremath{\diamond}]{fact}
+\declaretheorem[qed=\ensuremath{\diamond}]{claim}
+\declaretheorem[qed=\ensuremath{\diamond}]{observation}
+\declaretheorem[qed=\ensuremath{\diamond}]{proposition}
+
+\crefname{thm}{theorem}{theorems}
+\Crefname{thm}{Theorem}{Theorems}
+
+\crefname{lem}{lemma}{lemmas}
+\Crefname{lem}{Lemma}{Lemmas}
+
+\crefname{cor}{corollary}{corollarys}
+\Crefname{cor}{Corollary}{Corollarys}
+
+\crefname{fct}{fact}{facts}
+\Crefname{fct}{Fact}{Facts}
+
+\crefname{clm}{claim}{claims}
+\Crefname{clm}{Claim}{Claims}
+
+\crefname{obs}{observation}{observations}
+\Crefname{obs}{Observation}{Observations}
+
+\crefname{prop}{proposition}{propositions}
+\Crefname{prop}{Proposition}{Propositions}
+
 
 \theoremstyle{definition}
-\newtheorem{defn}{Definition}
-\newtheorem{cons}{Construction}
+\declaretheorem[qed=\ensuremath{\diamond}]{definition}
+\declaretheorem[qed=\ensuremath{\diamond}]{construction}
 
-\newcommand{\thmsymbol}{\( \diamond \)}
-\newenvironment{definition}{\begin{defn}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{defn}}
-\newenvironment{construction}{\begin{cons}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{cons}}
-\newenvironment{theorem}{\begin{thm}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{thm}}
-\newenvironment{lemma}{\begin{lem}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{lem}}
-\newenvironment{corollary}{\begin{cor}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{cor}}
-\newenvironment{fact}{\begin{fct}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{fct}}
-\newenvironment{claim}{\begin{clm}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{clm}}
-\newenvironment{observation}{\begin{obs}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{obs}}
-\newenvironment{proposition}{\begin{prop}%
-\renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
-{\popQED\end{prop}}
+\crefname{defn}{definition}{definitions}
+\Crefname{defn}{Definition}{Definitions}
+
+\crefname{cons}{construction}{constructions}
+\Crefname{cons}{Construction}{Constructions}
+
+
+% \theoremstyle{plain}
+% \newtheorem{thm}{Theorem}
+% \newtheorem{lem}{Lemma}
+% \newtheorem{cor}{Corollary}
+% \newtheorem{fct}{Fact}
+% \newtheorem{clm}{Claim}
+% \newtheorem{obs}{Observation}
+% \newtheorem{prop}{Proposition}
+
+% \theoremstyle{definition}
+% \newtheorem{defn}{Definition}
+% \newtheorem{cons}{Construction}
+
+% \newcommand{\thmsymbol}{\( \diamond \)}
+% \newenvironment{definition}{\begin{defn}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{defn}}
+% \newenvironment{construction}{\begin{cons}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{cons}}
+% \newenvironment{theorem}{\begin{thm}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{thm}}
+% \newenvironment{lemma}{\begin{lem}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{lem}}
+% \newenvironment{corollary}{\begin{cor}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{cor}}
+% \newenvironment{fact}{\begin{fct}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{fct}}
+% \newenvironment{claim}{\begin{clm}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{clm}}
+% \newenvironment{observation}{\begin{obs}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{obs}}
+% \newenvironment{proposition}{\begin{prop}%
+% \renewcommand{\qedsymbol}{\thmsymbol}\pushQED{\qed}}%
+% {\popQED\end{prop}}

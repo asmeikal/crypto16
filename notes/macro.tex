@@ -39,7 +39,7 @@
 \newcommand{\Integers}{\mathbb{Z}}
 \newcommand{\Reals}{\mathbb{R}}
 \newcommand{\Bool}{\{0,1\}}
-\newcommand{\QRp}{\mathbb{QR}_p}
+\newcommand{\QR}[1][p]{\mathbb{QR}_{#1}}
 
 \newcommand{\IntegersPrimeGroup}[1][p]{\Integers^{\star}_{#1}}
 
@@ -93,6 +93,12 @@
 
 \newcommand{\PKEGameCPA}{\Game_{\Adv, \Pi}^{\text{CPA \\ one-time}}}
 \newcommand{\PKEGameCCA}[1]{\Game_{\Adv, \Pi}^{\text{CCA{#1}}}}
+
+\newcommand{\RSA}{\mathrm{RSA}}
+\newcommand{\RSAGen}{\Gen_{\RSA}}
+\newcommand{\RSAfun}{f_{\RSA}}
+\newcommand{\RSAinv}{f_{\RSA}^{-1}}
+\newcommand{\RSAtuple}{(\RSAGen, \RSAfun, \RSAinv)}
 
 \newcommand{\CPAGame}{\Game^{\scriptstyle \text{cpa}}_{\SKEScheme,\Adv}}
 \newcommand{\CCAGame}{\Game^{\scriptstyle \text{cca}}_{\SKEScheme,\Adv}}
