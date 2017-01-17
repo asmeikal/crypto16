@@ -118,13 +118,16 @@ We have equivalent definitions for perfect secrecy.
 \subsection{\acl{OTP}}
 
 Now we'll see a perfect encryption scheme, the \ac{OTP}.
-The message space, the cyphertext space, and the key space are all the same, \ie $\M = \K = \C = \{0,1\}^{l}$, with $l \in \Naturals$.
 
-Encryption and decryption use the xor operation:
-\begin{itemize}
-	\item $\OTPEnc(k,m) = k \xor m = c$;
-	\item $\OTPDec(k,c) = c \xor k = (k \xor m) \xor k = m$.
-\end{itemize}
+\begin{construction}[\acl{OTP}]
+	The message space, the cyphertext space, and the key space are all the same, \ie $\M = \K = \C = \{0,1\}^{l}$, with $l \in \Naturals$.
+
+	Encryption and decryption use the xor operation:
+	\begin{itemize}
+		\item $\OTPEnc(k,m) = k \xor m = c$;
+		\item $\OTPDec(k,c) = c \xor k = (k \xor m) \xor k = m$.
+	\end{itemize}
+\end{construction}
 Seeing that this is correct is immediate.
 
 This can actually be done in any finite abelian group $(\Group, +)$, where you just do $k + m$ to encode and $c - k$ to decode.

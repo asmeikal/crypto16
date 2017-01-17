@@ -1897,7 +1897,7 @@ It's proven to be \ac{CCA}-secure in the \ac{RO} model.
 	\ac{OAEP}, shown in \cref{fig:oaep}.
 	This is basically a 2-Feistel $(G,H)$, with $G,H$ hash functions.
 	\begin{itemize}
-		\item $\lambda_0, \lambda_1 \in \Naturals$;
+		\item $\lambda_0, \lambda_1 \in \NaturalsZ$;
 		\item $m' = m || 0^{\lambda_1}$, $r \rand{\{0,1\}^{\lambda_0}}$;
 		\item $s = m' \xor G(r)$, $t = r \xor H(s)$;
 		\item $\hat{m} = s || t$;
@@ -1932,7 +1932,7 @@ This means that $\abs{QR} = \frac{p-1}{2}$.
 Note also that, since $g^{p-1} \equiv g^0 \equiv 1 \mod p$, we have that $g^{\frac{p-1}{2}} \equiv -1 \mod p$.
 There is an easy way to check if a number is a square modulo $p$.
 
-Fix $p, q \equiv 3 \mod 4$, so $p, q \equiv 4 t + 3$ for some $t \in \Naturals$.
+Fix $p, q \equiv 3 \mod 4$, so $p, q \equiv 4 t + 3$ for some $t \in \NaturalsZ$.
 Consider $n = p \cdot q$, also called a Bloom integer.
 If this condition is met, squaring is a \ac{TDP} modulo $n$.
 
@@ -2361,47 +2361,107 @@ What we want from a \ac{SS} is that it is hard to forge a message together with 
 \end{definition}
 
 \begin{definition}[\acs{UFCMA} for \acsp{SS}]
-
+	Consider the game $\UFCMAGame(\lambda)$:
+	\begin{itemize}
+		\item $(\pk, \sk) \from \SignSchemeKGen(1^{\lambda})$;
+		\item $(m^{\star}, \sigma^{\star}) \from \Adv^{\SignSchemeSign(\sk, \cdot)} (1^{\lambda}, \pk)$;
+		\item output 1 $\iff \SignSchemeVrfy(\pk, (m^{\star}, \sigma^{\star})) = 1$ and $m^{\star}$ is fresh, \ie it is not a signature query.
+	\end{itemize}
+	$\SignScheme$ is \ac{UFCMA} if for all \ac{PPT} $\Adv$ $\exists$ a negligible $\epsilon : \NaturalsZ \to [0,1]$ such that
+	\begin{equation*}
+		\Pr{
+			\UFCMAGame(\lambda) = 1
+		} \le \epsilon(\lambda). \qedhere
+	\end{equation*}
 \end{definition}
 
+\ac{IBE} is an idea of Shamir.
 
+A natural idea is to swap $\pk$ and $\sk$ in \ac{RSA}, since they are symmetric.
+\begin{enumerate}
+	\item $(n, p, q, d, e) \from \RSAGen(1^{\lambda})$, $n = p \cdot q$, $d \cdot e \equiv 1 \mod \phi(n)$.
+		$\pk = (n, e)$, $\sk = d)$;
+	\item $\Sign(\sk, m) = m^d \mod n$;
+	\item $\Vrfy(\pk, (m, \sigma)) = 1 \iff \sigma^{e} = m \mod n$.
+\end{enumerate}
+But this is not secure.
+\begin{enumerate}
+	\item Pick $\sigma \in \Integers_{n}^{\star}$, let $m = \sigma^e \mod n$, output $(m, \sigma)$.
+	\item Pick $m^{\star} \in \Integers_n^{\star}$ such that we can find $m_1, m_2$ such that $m_1 \cdot m_2 = m^{\star}$.
+		Then $\Sign(\sk, m_1) \cdot \Sign(\sk, m_2) = \Sign(\sk, m^{\star})$ to the oracle.
+		\begin{equation*}
+			m_2 = \frac{m^{\star}}{m_1},
+			\qquad
+			\sigma_1 = m_1^{d},
+			\qquad
+			\sigma_2 = \left( \frac{m^{\star}}{m_1} \right)^{d},
+			\qquad
+			\sigma^{\star} = \sigma_1 \cdot \sigma_2.
+		\end{equation*}
+\end{enumerate}
 
+If we hash the message before signing it, we get this to work in the \ac{RO} model.
 
+\begin{construction}[\acs{SS} from \acs{TDP} + \acs{RO}] \label{cons:ss-tdp-ro}
+	We have a \ac{TDP} $(\Gen, f, f^{-1})$, with $\X_{\pk}$ being the domain of the \ac{TDP}.
+	We assume a function $H : \{0,1\}^{\star} \to \X_{\pk}$, \ie the message space is $\M_{\pk} = \{0,1\}^{\star}$.
+	\begin{enumerate}
+		\item $\KGen(1^{\lambda}) = (\pk, \sk) \from \Gen(1^{\lambda})$;
+		\item $\Sign(\sk, m) = f^{-1}(\sk, H(m)) = \sigma$;
+		\item $\Vrfy(\pk, (m, \sigma)) = 1 \iff f(\pk, \sigma) = H^(m)$. \qedhere
+	\end{enumerate}
+\end{construction}
 
+\begin{theorem} \label{thm:ss-tdp-ro}
+	The \ac{SS} in \cref{cons:ss-tdp-ro} is \ac{UFCMA} in the \ac{RO} model if $(\Gen, f, f^{-1})$ is a \ac{TDP}.
+\end{theorem}
 
+\begin{proof}[Proof of \cref{thm:ss-tdp-ro}]
+	Assume exists $\Adv$ capable of forging, \ie be a \ac{PPT} adversary such that
+	\begin{equation*}
+		\Pr{
+			\UFCMAGame(\lambda) = 1
+		} \ge \frac{1}{\poly(\lambda)}.
+	\end{equation*}
+	We use her to break the \ac{TDP}.
 
+	Without loss of generality, we make the following assumptions on $\Adv$:
+	\begin{enumerate}
+		\item $\Adv$ never repeats her queries;
+		\item before making signature query $m_i$, $\Adv$ asks $m_i$ to the \ac{RO}.
+	\end{enumerate}
+	We describe $\B$ which is given $\pk$ and $y = f(\pk, x)$ for $x \rand{\X_{\pk}}$, \ie $\B(1^{\lambda}, \pk, y)$:
+	\begin{enumerate}
+		\item run $\Adv(1^{\lambda}, \pk)$, pick $j \rand{[q_h]}$ (number of queries of $\Adv$).
+			With probability $\approx \frac{1}{q_h}$ (one over polynomial) we guess $j$, the last message;
+		\item upon query $m_i \in [0,1]$
+			\begin{enumerate}
+				\item if $i \neq j$, sample $x_0 \rand{\X_{\pk}}$, and let $y_i = f(\pk, x_i)$ and return $y_i$;
+				\item if $i = j$, return $y$ to $\Adv$;
+			\end{enumerate}
+		\item upon seeing query $m_i$, return $x_i$ as long as $m_i \neq m$, else abort;
+		\item when $\Adv$ gives $(m^{\star}, \sigma^{\star})$, output $\sigma^{\star}$.
+	\end{enumerate}
 
+	$\B$ perfectly simulates $\pk$, and also signature queries as long as it does not abort.
+	\begin{enumerate}
+		\item $y_i$ are random, since $x_i$ are random and $f(\pk, \cdot)$ is a permutation;
+		\item $\Sign(\sk, m_i) = f^{-1}(\sk, H(m_i)) = f^{-1}(\sk, f(\pk, x_i)) = x_i$.
+	\end{enumerate}
+	Additionally, if $(m^{\star}, \sigma^{\star})$ is valid it means that $\sigma^{\star} = f^{-1}(\sk, H(m^{\star})) = f^{-1}(\sk, y) = x$, and $\B$ inverts the \ac{TDP}.
 
+	The probability of breaking the \ac{TDP} is the probability of not aborting times the probability that $\Adv$ breaks the scheme.
+	\begin{equation*}
+		\Pr{
+			\text{``$\B$ wins''}
+		} = \frac{1}{q_h} \cdot \frac{1}{\poly(\lambda)} \neq \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{proof}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+\begin{theorem}
+	\acp{SS} exist $\iff$ \acp{OWF} exist.
+\end{theorem}
+But this is inefficient.
 
 \section{\acl{WSS}}
 
@@ -2619,3 +2679,139 @@ What we want from a \ac{SS} is that it is hard to forge a message together with 
 			\end{equation*}
 	\end{itemize}
 \end{proof}
+
+\section{\aclp{IDS}}
+
+An \ac{IDS} is an interactive protocol between a prover $\P$ and a verifier $\V$, both \ac{PPT}.
+
+\begin{definition}[\acl{IDS}]
+	An \ac{IDS} is a tuple $\Pi = (\Gen, \P, \V)$.
+	$\tau$ is the message exchange between $\P$ and $\V$, denoted as $\tau \rand{(\P(\pk,\sk) \toandfrom \V(\pk))}$, with $(\pk, \sk) \rand{\Gen(1^{\lambda})}$.
+	$\mathrm{out}_{\V}(\P(\pk, \sk) \toandfrom \V(\pk))$ is a random variable, and decides if $\P$ knows $\sk$ or not.
+	% add drawing of ID scheme exchange
+
+	Correctness requirement: for all $\lambda \in \NaturalsZ$, for all $(\pk, \sk)$ output by $\Gen(1^{\lambda})$,
+	\begin{equation*}
+		\Pr{ \mathrm{out}_{\V} (\P(\pk, \sk) \toandfrom \V(\pk)) = 1} = 1.
+	\end{equation*}
+	This is called \emph{perfect correctness}.
+\end{definition}
+We also have a security requirement.
+It should be hard to impersonate $\P$ without knowing the secret key.
+This does not capture the fact that one transcript could work always.
+The security requirement is that it should be hard to impersonate $\P$ even after seeing many $\tau$s from honest executions.
+
+\begin{definition}[Passively secure \acs{IDS}]
+	Consider the game $\IDSGame(\lambda)$, with $\Adv = (\Adv_1, \Adv_2)$, defined by:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\Gen(1^{\lambda})}$;
+		\item $s \from \Adv_1^{\Trans(\pk, \sk)}(\pk)$, where $\Trans(\pk, \sk)$ upon empty input outputs $\tau \rand{(\P(\pk, \sk) \toandfrom \V(\pk))}$, and $s$ is some ``state'';
+		\item return $\mathrm{out}_{\V}(\Adv_2(s, \pk) \toandfrom \V(\pk))$.
+	\end{enumerate}
+	$\Pi = (\Gen, \P, \V)$ is passively secure if for all \ac{PPT} $\Adv$
+	\begin{equation*}
+		\Pr{ \IDSGame(\lambda) = 1 } \le \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{definition}
+
+It's natural to build \acp{IDS} using \acp{SS}.
+The idea is to sign random messages from $\V$.
+\begin{enumerate}
+	\item $\V$ samples $m \rand{\M}$, and sends it to $\P$;
+	\item $\P$ computes $\sigma = \Sign(\sk, m)$ and sends it to $\V$;
+	\item $\V$ outputs $\Vrfy(\pk, (m, \sigma))$.
+\end{enumerate}
+
+Active security is when the \ac{IDS} resists to an adversary that replaces $\V$, and thus chooses what to send to $\P$.
+The proposed scheme is both passively secure and actively secure.
+
+Encrypting and decrypting random messages also works as an \ac{IDS}.
+
+\begin{definition}[Canonical \acs{IDS}]
+	In a canonical \ac{IDS} we have that $\P = (\P_1, \P_2)$ and that $\V = (\V_1, \V_2)$.
+	Just three messages are exchanged:
+	\begin{enumerate}
+		\item $\alpha \rand{\P_1(\pk, \sk)}$ is sent to $\V$;
+		\item $\beta \rand{\B_{\lambda, \pk}} = \V_1$, the challenge, is sent to $\P$;
+		\item $\gamma \rand{\P_2(\pk, \sk, \alpha, \beta)}$ is sent to $\V$;
+		\item $\V$ outputs $\V_2(\pk, \alpha, \beta, \gamma) \in \{0,1\}$.
+	\end{enumerate}
+	The verifier is randomised: this is called a (three-move) ``public coins'' verifier.
+	Sometimes $\P_1$ and $\P_2$ share a state, \ie $(\alpha, a) \rand{\P_1(\pk, \sk)}$ and $\gamma \rand{\P_2(\pk, \sk, \alpha, \beta, a)}$.
+
+	From a canonical \ac{IDS} we want non-degeneracy, \ie it's hard to predict the first message of the prover:
+	\begin{equation*}
+		\forall \hat{\alpha} . \Pr{\alpha = \hat{\alpha} : \alpha \rand{\P_1(\pk, \sk)}} \le \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{definition}
+
+We can construct a \ac{SS} using an \ac{IDS}.
+\begin{construction}[Fiat-Shamir Transform] \label{cons:fiat-shamir-transform}
+	Let $\Pi = (\Gen, \P, \V)$ be an \ac{IDS}.
+	Consider the \ac{SS} $\Pi' = (\KGen, \Sign, \Vrfy)$ defined as:
+	\begin{itemize}
+		\item $\KGen(1^{\lambda}) = \Gen(1^{\lambda})$;
+		\item $\Sign(\sk, m)$:
+			\begin{enumerate}
+				\item $\alpha \rand{\P_1(\pk, \sk)}$;
+				\item $\beta = H(\alpha, m)$ with $H : \{0,1\}^{\star} \to \B_{\pk}$;
+				\item $\gamma \rand{\P_2(\pk, \sk, \alpha, \beta)}$;
+				\item $\sigma = (\alpha, \gamma)$;
+			\end{enumerate}
+		\item $\Vrfy(\pk, (m, \sigma))$ computes $\beta = H(\alpha, m)$, then returns $\V_2(\pk, \alpha, \beta, \gamma)$.
+	\end{itemize}
+\end{construction}
+
+\begin{theorem} \label{thm:fiat-shamir-transform}
+	If $\Pi$ is passively secure, $\Pi'$ as defined in \cref{cons:fiat-shamir-transform} is \ac{UFCMA}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:fiat-shamir-transform}]
+	We do a reduction from $\Adv'$ forging in $\Game^{\mathrm{ufcma}}_{\Pi', \Adv'}(\lambda)$ into $\Adv$ winning $\IDSGame(\lambda)$, both \ac{PPT}.
+
+	Assumptions we make: $\Adv'$ does not repeat hash queries, and if $(m^{\star}, \sigma^{\star})$ is the forgery, with $(\sigma^{\star}, \gamma^{\star})$, then $\Adv'$ queried $H(\alpha^{\star}, m^{\star})$ to the \ac{RO}.
+
+	The reduction to $\Adv^{\Trans(\pk, \sk)}(\pk)$ is as follows:
+	\begin{enumerate}
+		\item forward $\pk$ to $\Adv'$.
+			Pick $i^{\star} \rand{q_h}$, where $q_h$ is the number of \ac{RO} queries;
+		\item query $\Trans(\pk, \sk)$ and get $\tau_i = (\alpha_i, \beta_i, \gamma_i)$ for $i \in [q_s]$, with $q_s$ being the number of signature queries;
+		\item upon $(\alpha_j, m_j)$ \ac{RO} query from $\Adv'$:
+			\begin{enumerate}
+				\item if $j = i^{\star}$ send $a_j$ to the verifier $\V$ in $\IDSGame$, receive $\beta^{\star}$ from $\V$ and send $\beta^{\star}$ to $\Adv'$, with $\beta^{\star} \rand{\B_{\pk, \lambda}}$;
+				\item else, return random $\beta_j \rand{\B_{\pk, \lambda}}$
+			\end{enumerate}
+		\item upon $m_i$ signature query from $\Adv'$:
+			\begin{enumerate}
+				\item check if $\alpha_i$ in $\tau_i = (\alpha_i, \beta_i, \gamma_i)$ is such that $(\alpha_i, m_i)$ is already queried to the \ac{RO}.
+					If it is, abort;
+				\item else return $(\alpha_i, \gamma_i)$ and set $H(\alpha_i, m_i) = \beta_i$ in the \ac{RO};
+			\end{enumerate}
+		\item when $\Adv'$ outputs $(m^{\star}, (\alpha^{\star}, \gamma^{\star}))$, forward $\gamma^{\star}$ to the verifier.
+	\end{enumerate}
+
+	If we didn't abort, and $\Adv'$ is successful, and we guessed $i^{\star}$, we have
+	\begin{equation*}
+		\Pr{\text{$\Adv$ wins}} \ge
+		\underbrace{\Pr{\text{$\Adv'$ wins}}}_{\frac{1}{\poly(\lambda)}} \cdot
+		\underbrace{\Pr{\alpha^{\star} = \alpha_{i^{\star}}}}_{\frac{1}{q_h}} \cdot
+		\Pr{\text{not abort}}.
+	\end{equation*}
+
+	Let $E_i$ be the event that we abort in the $i$-th signature query.
+	By the non-degeneracy property of $\Pi$ we have that $\Pr{E_i} \in \negl{\lambda}$, and thus
+	\begin{equation*} 
+		\Pr{\text{abort}} \le \sum_{i=1}^{q_s} \Pr{E_i} \le q_s \cdot \epsilon(\lambda).
+	\end{equation*}
+
+	Thus $\exists \mu \in \negl{\lambda}$ such that
+	\begin{equation*}
+		\Pr{\text{$\Adv$ wins}} \ge \frac{1}{\poly(\lambda)} \cdot (1 - \mu(\lambda)) \cdot \frac{1}{q_s}
+	\end{equation*}
+	which is non negligible.
+\end{proof}
+
+
+
+
+
