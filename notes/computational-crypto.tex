@@ -399,7 +399,7 @@ As usual, a \ac{SKE} scheme is a tuple $\SKESchemeTuple$.
 Deterministic schemes cannot achieve this, \ie when $\SKEEnc$ is deterministic the adversary could cipher $m_0$ and then compare $c$ to $\SKEEnc(k, m_0)$, and output $0$ if and only if $c = \SKEEnc(k, m_0)$.
 
 Let's construct a \ac{CPA}-secure \ac{SKE} scheme using \acp{PRF}.
-\begin{construction}[\acs{SKE} using \acsp{PRF}] \label{cons:ske-prf}
+\begin{construction}[\acs{SKE} scheme from \acs{PRF}] \label{cons:ske-prf}
 	Let $\F$ be a \ac{PRF}, we define the following \ac{SKE} scheme $\SKESchemeTuple$:
 	\begin{itemize}
 		\item $\SKEKeyGen$ takes $k \rand{\{0,1\}^{\lambda}}$;
@@ -653,7 +653,7 @@ With \ac{UHF} we can extend the domain of a \ac{PRF}.
 \end{proof}
 
 Now, let's look at a construction.
-\begin{construction}[\ac{UHF} with Galois field]
+\begin{construction}[\acs{UHF} with Galois field]
 	Let $\Field$ be a finite field, such as the Galois field over $2^n$.
 	In the Galois field, a bit string represents the coefficients of a polynomial of degree $n-1$.
 	Addition is the usual, while for multiplication an irreducible polynomial $p(x)$ of degree $n$ is fixed, and the operation is carried out modulo $p(x)$.
@@ -857,7 +857,7 @@ A \ac{PRP} family cannot be distinguished from a true permutation.
 For a \emph{strong} \ac{PRP} family, the adversary has access to the inverse of the permutation.
 From \acp{PRF} we can build both \acp{PRP} and strong \acp{PRP}.
 
-\begin{definition}[Feistel]
+\begin{definition}[Feistel function]
 	Let $F: \{0,1\}^n \to \{0,1\}^n$, then the Feistel function (\cref{fig:feistel}) is defined as
 	\begin{equation*}
 		\Feistel(\underbrace{x,y}_{2n}) = (y, x \xor F(y)) = (\underbrace{x', y'}_{2n}). \qedhere
@@ -1171,7 +1171,7 @@ A claw is a pair of functions $(f_1, f_0)$ and two values $(x_1,x_0)$ such that 
 
 We can now define a \ac{CR} compression function.
 
-\begin{construction}[\acl{CR} Compression Function from \acs{CFP}] \label{cons:cfp-cr}
+\begin{construction}[\acs{CR} Compression Function from \acs{CFP}] \label{cons:cfp-cr}
 	Let $\CFPTuple$, and assume $\X_{\pk} = \{0,1\}^{n}$, and let $m \in \{0,1\}^l$.
 	Define $H_{\pk}$ as:
 	\begin{equation*}
@@ -1580,7 +1580,7 @@ Note that this is like an optimised version of \ac{GGM}.
 
 \subsection{Number Theoretic \acl{CFP}}
 
-\begin{construction} \label{cons:cfp-number-theory}
+\begin{construction}[Number Theoretic \acs{CFP}] \label{cons:cfp-number-theory}
 	\begin{enumerate}
 		\item $\params = \GroupGen$;
 		\item $y \rand{\Group}$, $\pk = (\params, y)$;
@@ -1795,7 +1795,7 @@ We don't get \ac{PKE} directly.
 
 The problem is that randomness is missing.
 Recall hardcore functions.
-\begin{construction} \label{cons:pke-tdp-hardcore}
+\begin{construction}[\acs{PKE} scheme from \acs{TDP}] \label{cons:pke-tdp-hardcore}
 	Take $(\Gen, f, f^{-1})$, and let $h(\cdot)$ be hardcore for $f$.
 	Then do the following:
 	\begin{enumerate}
@@ -1887,7 +1887,7 @@ To do \ac{RSA} encryption in practice pick $r \rand{\{0,1\}^{t}}$ and define $\E
 \end{itemize}
 It's proven to be \ac{CCA}-secure in the \ac{RO} model. 
 
-\begin{construction}[PKCS\#1 V.2 - \acs{OAEP}] \label{cons:oaep}
+\begin{construction}[\acs{OAEP} - PKCS\#1 V.2] \label{cons:oaep}
 	\begin{figure}
 		\centering
 		\includegraphics[width=0.8\linewidth]{drawings/oaep.eps}
@@ -2095,7 +2095,277 @@ We call it \ac{CS} lite.
 
 	Now, we define $H_2(\lambda, b)$, where instead of using $g_4$ we use $g_1^{r'} = g_2^{r''}$ for some random $r', r''$.
 	The next claim is that $H_1(\lambda, b) \CompInd H_2(\lambda, b)$, by reduction to the \ac{DDH}.
+
+	To finish the proof, we introduce a lemma and two technical claims, that imply the theorem.
+
+	\begin{lemma} \label{lem:cs-lite-cca-1}
+		$b$ is information theoretically hidden in $H_2(\lambda, b)$ for all $\Adv$ asking $t = \poly(\lambda)$ $\Dec$ queries.
+	\end{lemma}
+
+	\begin{proof}[Proof of \cref{lem:cs-lite-cca-1}]
+		Remember that $g_3 = g_1^r$ and that $g_4 = g_2^{r'}$, and that $g_2 = g_1^{\alpha}$.
+		For the proof we assume that $\alpha \neq 0$ and that $r \neq r'$.
+
+		From $h_1 = g_1^{x_1} \cdot g_2^{y_1}$, $\Adv$ knows that
+		\begin{equation} \label{eq:cs-lite-cca-1:x1-y1}
+			\log_{g_1} (h_1) = x_1 + y_1 \log_{g_1} (g_2) = x_1 + \alpha y_1 \mod q.
+		\end{equation}
+		There are $q$ possible pairs $(x_1, y_1)$.
+
+		We say that query $c = (c_1, c_2, c_3, c_4)$ is legal if $c_1 = g_1^{r''}$ and $c_2 = g_2^{r''}$, or equivalently if $\log_{g_1}(c_1) = \log_{g_2}(c_2)$.
+
+		By \cref{clm:cs-lite-cca-1:additional-info} and \cref{clm:cs-lite-cca-1:additional-info}, before getting $c^{\star}$, $\Adv$ knows only that $(x_1, x_2)$ satisfy \cref{eq:cs-lite-cca-1:x1-y1}.
+		\begin{equation*}
+			c^{\star} = (g_3, g_4, g_3^{x_1} \cdot g_4^{y_1} \cdot m_b, g_3^{x_2} \cdot g_4^{y_2}).
+		\end{equation*}
+		We want to show that $g_3^{x_1} \cdot g_4^{y_1}$ is uniform by $\Adv$ point of view.
+		Fix an arbitrary $h$ in $\Group$.
+		If $h = g_3^{x_1} \cdot g_4^{y_1}$, then
+		\begin{equation*}
+			\log_{g_1}(h) = x_1 \log_{g_1} (g_3) + y_1 \log_{g_1}(g_4).
+		\end{equation*}
+		Here $g_3 = g_1^{r}$ and $g_4 = g_2^{r'}$, thus
+		\begin{equation} \label{eq:cs-lite-cca-1:r}
+			\log_{g_1}(h) = x_1 r + \alpha y_1 r'.
+		\end{equation}
+		\Cref{eq:cs-lite-cca-1:x1-y1} and \cref{eq:cs-lite-cca-1:r} are independent: consider the system of equations
+		\begin{equation*}
+			\underbrace{
+			\begin{pmatrix}
+				1 & \alpha \\
+				r & \alpha r'
+			\end{pmatrix}
+			}_{B}
+			\begin{pmatrix}
+				x_1 \\
+				y_1
+			\end{pmatrix}
+			=
+			\begin{pmatrix}
+				\log_{g_1}(h_1) \\
+				\log_{g_1}(h).
+			\end{pmatrix}
+		\end{equation*}
+		$\det(B) = \alpha r' - \alpha r \neq 0$ since $\alpha \neq 0$ and $r \neq r'$.
+
+		Since $h$ is arbitrary,
+		\begin{equation*}
+			\Pr{
+				g_3^{x_1} \cdot g_4^{y_1} = h
+			} = \frac{1}{\abs{\Group}}.
+		\end{equation*}
+		$g_3^{x_1} \cdot g_4^{y_1}$ is uniform, and thus the message is hidden.
+	\end{proof}
+
+	\begin{claim} \label{clm:cs-lite-cca-1:additional-info}
+		$\Adv$ obtains additional info about $x_1, y_1$ only if it ever makes a $\Dec$ query for $c = (c_1, c_2, c_3, c_4)$ such that
+		\begin{itemize}
+			\item $\log_{g_1}(c_1) \neq \log_{g_2}(c_2)$, \ie it's illegal;
+			\item $\Dec(\sk, c) \neq \bot$. \qedhere
+		\end{itemize}
+	\end{claim}
+
+	\begin{proof}[Proof of \cref{clm:cs-lite-cca-1:additional-info}]
+		If $\Dec(\sk, c) = \bot$, then $c_4 \neq c_1^{x_2} \cdot c_2^{y_2}$.
+		You learn nothing about $x_1, y_1$ if you make this query.
+
+		Assume it's not $\bot$, but the query is legal.
+		$\Adv$ learns that
+		\begin{align*}
+			m & = \frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}} \\
+			& \implies \\
+			\log_{g_1}(m)
+			& =
+			\log_{g_1}(c_3) - x_1 \log_{g_1} (c_1) - y_1 \log_{g_1} (c_2) \\
+			& =
+			\log_{g_1}(c_3) - r'' x_1 - r'' y_1 \alpha.
+		\end{align*}
+		Look at the determinant of
+		\begin{equation*}
+			\begin{pmatrix}
+				1 & \alpha \\
+				-r'' & -\alpha r''
+			\end{pmatrix}
+		\end{equation*}
+		which is $- \alpha r'' + \alpha r'' = 0$.
+		This does not tell us anything, so the only way to learn something is a query that is not $\bot$ and that is illegal.
+	\end{proof}
+
+	\begin{claim} \label{clm:cs-lite-cca-1:illegal-query}
+		\begin{equation*}
+			\Pr{
+				\Adv \text{ makes illegal $\Dec$ query $c$ for which $\Dec(c) \neq \bot$}
+			} \le \negl{\lambda}.
+		\end{equation*}
+	\end{claim}
+
+	\begin{proof}[Proof of \cref{clm:cs-lite-cca-1:illegal-query}]
+		Assume $c = (c_1, c_2, c_3, c_4)$ is illegal, \ie
+		\begin{equation*}
+			r_1 = \log_{g_1}(c_1) \neq \log_{g_2}(c_2) = r_2.
+		\end{equation*}
+		For $c$ to be not rejected, we need that $c_4 = c_1^{x_2} \cdot c_2^{y_2}$
+		$\Adv$ knows that
+		\begin{equation} \label{eq:cs-lite-cca-1:x2-y2}
+			\log_{g_1}(h_2) = x_2 + \alpha y_2 \mod q.
+		\end{equation}
+		Fix arbitrary $c_4 \in \Group$.
+		We need that $c_4 = c_1^{x_2} \cdot c_2^{y_2}$.
+
+		$\Adv$ also knows that
+		\begin{equation*}
+			\log_{g_1}(c_4) = x_2 \log_{g_1} (c_1) + y_2 \log_{g_1}(c_2) = x_2 r_1 + y_2 r_2 \alpha.
+		\end{equation*}
+		These, too, are independent, since $\det \left( \begin{smallmatrix}1 & \alpha \\ r_1 & r_2 \alpha\end{smallmatrix} \right) = \alpha (r_2 - r_1) \neq 0$.
+		For the first query, $\Adv$ can guess $c_4$ with probability less than or equal to $\frac{1}{q}$.
+
+		But if the query is rejected, $\Adv$ has excluded one pair.
+		At query $i+1$, $\Adv$ can guess $c_4$ with probability $\frac{1}{q-i}$.
+		The probability that $\exists i$ such that the $(i+1)$-th query is not rejected is less than or equal to
+		\begin{equation*}
+			\sum_{i = 0}^{p-1} \Pr{ \text{$i$-th query is not rejected}} \le \frac{p}{q-p} = \negl{\lambda}
+		\end{equation*}
+		with $\lambda \approx \log(q)$.
+	\end{proof}
+
+	Since \cref{clm:cs-lite-cca-1:additional-info} and \cref{clm:cs-lite-cca-1:illegal-query} imply \cref{lem:cs-lite-cca-1}, and that in turn implies the thesis, we are done.
 \end{proof}
+
+Let's see where the proof breaks for \ac{CCA}-2.
+After having $c^{\star} = (c_1^{\star}, c_2^{\star}, c_3^{\star}, c_4^{\star})$, $\Adv$ knows that
+\begin{equation*}
+	\log_{g_1}(c_4^{\star}) = x_2 \log_{g_1}(g_3) + y_2 \log_{g_1}(g_4).
+\end{equation*}
+This is independent of \cref{eq:cs-lite-cca-1:x2-y2}, and $\Adv$ can recover $x_2, y_2$.
+$\Adv$ constructs
+\begin{equation*}
+	c = \left(g_1^{r_1}, g_2^{r_2}, c_3, {(g_1^{r_1})}^{x_2}, {(g_2^{r_2})}^{y_2} \right).
+\end{equation*}
+$\Adv$ learns $m = \frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}}$, and can recover $x_1, y_1$ and decrypt to find $b$.
+\begin{equation*}
+	\log_{g_1} \left( \frac{c_3}{m} \right) = x_1 r_1 + \alpha y_1 r_2.
+\end{equation*}
+
+\subsection{Real \acl{CS}}
+
+\begin{construction}[\acl{CS}] \label{cons:cs}
+	Consider the \ac{CS} \ac{PKE} scheme $\Pi = (\KGen, \Enc, \Dec)$, where
+	\begin{itemize}
+		\item $\KGen(1^{\lambda})$:
+			\begin{enumerate}
+				\item $\GroupGen$;
+				\item let $g_1 = g$, take $\alpha \rand{\Integers_q}$, and let $g_2 = g_1^{\alpha}$;
+				\item let $\H : \{0,1\}^{\star} \to \Integers_q$ be a \ac{CRH};
+				\item pick $x_1, x_2, y_1, y_2, x_3, y_3 \rand{\Integers_q}$;
+				\item let $h_i = g_1^{x_i} \cdot g_2^{y_i}$, for $i \in \{1,2,3\}$;
+				\item $\pk = (g_1, g_2, h_1, h_2, h_3)$, $\sk = (x_1, x_2, x_3, y_1, y_2, y_3)$;
+			\end{enumerate}
+		\item $\Enc(\pk, m)$:
+			pick $r \rand{\Integers_q}$, and output
+			\begin{equation*}
+				c = \left( g_1^{r}, g_2^{r}, h_1^{r} \cdot m, \left(h_2 \cdot h_3^{\beta}\right)^{r} \right) = (c_1, c_2, c_3, c_4)
+			\end{equation*}
+			where $\beta = \H(c_1, c_2, c_3)$.
+		\item $\Dec(\sk, (c_1, c_2, c_3, c_4))$:
+			check that
+			\begin{equation*}
+				c_1^{x_2 + \beta x_3} \cdot c_2^{y_2 + \beta y_3} = c_4.
+			\end{equation*}
+			If not, output $\bot$.
+			Otherwise, output
+			\begin{equation*}
+				m = \frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}}.
+			\end{equation*}
+	\end{itemize}
+	Correctness:
+	\begin{align*}
+		c_1^{x_2 + \beta x_3} \cdot c_2^{y_2 + \beta y_3}
+		& =
+		\left( g_1^r \right)^{x_2} \cdot
+		\left( g_1^r \right)^{\beta x_3} \cdot
+		\left( g_2^r \right)^{y_2} \cdot
+		\left( g_2^r \right)^{\beta y_3} \\
+		& = 
+		\left( g_1^{x_2} \cdot g_2^{y_2} \right)^{r} \cdot
+		\left( g_1^{x_3} \cdot g_2^{y_3} \right)^{\beta r} \\
+		& = h_2^{r} \cdot h_3^{\beta r}
+		=
+		\left( h_2 \cdot h_3^{\beta} \right)^{r}.
+	\end{align*}
+\end{construction}
+
+The proof of \ac{CCA}-2 security looks much similar to the proof for \ac{CCA}-1 security of \ac{CS} lite (\cref{thm:cs-lite-cca-1}).
+
+\begin{theorem} \label{thm:cs-cca-2}
+	The \ac{CS} \ac{PKE} scheme (\cref{cons:cs}) is \ac{CCA}-2 under \ac{DDH}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:cs-cca-2}]
+	Start with $(g, g^{\alpha}, g^r, g^{\alpha r})$.
+	\begin{equation*}
+		c^{\star} = \left( g^r, g^{\alpha r}, g^{x_1 \alpha r} \cdot g^{y_1 \alpha r} \cdot m, \left(g^{x_2} \cdot g^{x_3} \cdot g^{\alpha \beta y_2} \cdot g^{\alpha \beta y_3}\right)^{r} \right).
+	\end{equation*}
+	These have the same distribution, so the first tuple is indistinguishable from $(g, g^{\alpha}, g^{r}, g^{\alpha r'})$.
+	The first hybrid uses the \ac{DDH} tuple, the second uses the non-\ac{DDH} tuple.
+
+	From the $\pk$, $\Adv$ knows that
+	\begin{align*}
+		\log_{g_1} (h_2) & = x_2 + \alpha y_2, \\
+		\log_{g_1} (h_3) & = x_3 + \alpha y_3.
+	\end{align*}
+	Let's analyse the probability of rejecting illegal queries.
+	Let $g_3 = g_1^{r}$, and let $g_4 = g_2^{r'}$, with $r \neq r'$.
+	Given $c^{\star}$, $\Adv$ knows that
+	\begin{equation*}
+		\log_{g_1} (c_4^{\star}) =
+		(x_2 + \beta^{\star} x_3) r + (y_2 + \beta^{\star} y_3) \alpha r'.
+	\end{equation*}
+	Take arbitrary $c = (c_1, c_2, c_3, c_4) \neq c^{\star}$, and assume $c$ is illegal, \ie $\log_{g_1}(c_1) \neq \log_{g_2}(c_2)$.
+	Three cases are possible:
+	\begin{enumerate}
+		\item $(c_1, c_2, c_3) = (c_1^{\star}, c_2^{\star}, c_3^{\star})$, but $c_4 \neq c_4^{\star}$.
+			It's impossible, so it's always rejected;
+		\item $(c_1, c_2, c_3) \neq (c_1^{\star}, c_2^{\star}, c_3^{\star})$, but
+			\begin{equation*}
+				\H(c_1, c_2, c_3) = \beta = \beta^{\star} = \H(c_1^{\star}, c_2^{\star}, c_3^{\star}).
+			\end{equation*}
+			It's impossible (highly unlikely) by \ac{CRH};
+		\item as before, $(c_1, c_2, c_3) \neq (c_1^{\star}, c_2^{\star}, c_3^{\star})$ and $\beta \neq \beta^{\star}$. \qedhere
+	\end{enumerate}
+\end{proof}
+
+\section{\aclp{SS}}
+
+We are still inside Public Key Cryptography, but we stop with encryption, and instead look at a new primitive: \acp{SS}.
+Basically, it's a primitive just like \ac{MAC}, but this time without the two parties sharing a secret.
+
+% add drawing of Signature Scheme
+
+A big difference between \ac{MAC} and \ac{SS} is that in \ac{SS} the signature is publicly verifiable.
+What we want from a \ac{SS} is that it is hard to forge a message together with a valid signature.
+
+\begin{definition}[\acl{SS}]
+	A \ac{SS} is a tuple $\SignSchemeTuple$ where
+	\begin{itemize}
+		\item $\SignSchemeKGen(1^{\lambda}) \to (\pk, \sk)$;
+		\item $\SignSchemeSign(\sk, m) \to \sigma$, with $m \in \M_{\pk}$ (the message space could depend on the public key $\pk$);
+		\item $\Vrfy(\pk, (m, \sigma)) \to 0/1$.
+	\end{itemize}
+	As usual, we want correctness, \ie for all $(\pk, \sk)$ output of $\SignSchemeKGen$, for all $m \in \M_{\pk}$,
+	\begin{equation*}
+		\Pr{
+			\SignSchemeVrfy(\pk, (m, \SignSchemeSign(\sk, m))) = 1
+		} \ge 1 - \negl{\lambda}.
+	\end{equation*}
+	Sometimes ``bad things'' happen, and the signature does not work: hence the probability.
+\end{definition}
+
+\begin{definition}[\acs{UFCMA} for \acsp{SS}]
+
+\end{definition}
+
+
+
 
 
 
