@@ -1,0 +1,624 @@
+
+\chapter{\aclp{SS}}
+
+We are still inside Public Key Cryptography, but we stop with encryption, and instead look at a new primitive: \acp{SS}.
+Basically, it's a primitive just like \ac{MAC}, but this time without the two parties sharing a secret.
+
+% add drawing of Signature Scheme
+
+A big difference between \ac{MAC} and \ac{SS} is that in \ac{SS} the signature is publicly verifiable.
+What we want from a \ac{SS} is that it is hard to forge a message together with a valid signature.
+
+\begin{definition}[\acl{SS}]
+	A \ac{SS} is a tuple $\SignSchemeTuple$ where
+	\begin{itemize}
+		\item $\SignSchemeKGen(1^{\lambda}) \to (\pk, \sk)$;
+		\item $\SignSchemeSign(\sk, m) \to \sigma$, with $m \in \M_{\pk}$ (the message space could depend on the public key $\pk$);
+		\item $\Vrfy(\pk, (m, \sigma)) \to 0/1$.
+	\end{itemize}
+	As usual, we want correctness, \ie for all $(\pk, \sk)$ output of $\SignSchemeKGen$, for all $m \in \M_{\pk}$,
+	\begin{equation*}
+		\Pr{
+			\SignSchemeVrfy(\pk, (m, \SignSchemeSign(\sk, m))) = 1
+		} \ge 1 - \negl{\lambda}.
+	\end{equation*}
+	Sometimes ``bad things'' happen, and the signature does not work: hence the probability.
+\end{definition}
+
+\begin{definition}[\acs{UFCMA} for \acsp{SS}]
+	Consider the game $\UFCMAGame(\lambda)$:
+	\begin{itemize}
+		\item $(\pk, \sk) \from \SignSchemeKGen(1^{\lambda})$;
+		\item $(m^{\star}, \sigma^{\star}) \from \Adv^{\SignSchemeSign(\sk, \cdot)} (1^{\lambda}, \pk)$;
+		\item output 1 $\iff \SignSchemeVrfy(\pk, (m^{\star}, \sigma^{\star})) = 1$ and $m^{\star}$ is fresh, \ie it is not a signature query.
+	\end{itemize}
+	$\SignScheme$ is \ac{UFCMA} if for all \ac{PPT} $\Adv$ $\exists$ a negligible $\epsilon : \NaturalsZ \to [0,1]$ such that
+	\begin{equation*}
+		\Pr{
+			\UFCMAGame(\lambda) = 1
+		} \le \epsilon(\lambda). \qedhere
+	\end{equation*}
+\end{definition}
+
+\ac{IBE} is an idea of Shamir.
+
+A natural idea is to swap $\pk$ and $\sk$ in \ac{RSA}, since they are symmetric.
+\begin{enumerate}
+	\item $(n, p, q, d, e) \from \RSAGen(1^{\lambda})$, $n = p \cdot q$, $d \cdot e \equiv 1 \mod \phi(n)$.
+		$\pk = (n, e)$, $\sk = d)$;
+	\item $\Sign(\sk, m) = m^d \mod n$;
+	\item $\Vrfy(\pk, (m, \sigma)) = 1 \iff \sigma^{e} = m \mod n$.
+\end{enumerate}
+But this is not secure.
+\begin{enumerate}
+	\item Pick $\sigma \in \Integers_{n}^{\star}$, let $m = \sigma^e \mod n$, output $(m, \sigma)$.
+	\item Pick $m^{\star} \in \Integers_n^{\star}$ such that we can find $m_1, m_2$ such that $m_1 \cdot m_2 = m^{\star}$.
+		Then $\Sign(\sk, m_1) \cdot \Sign(\sk, m_2) = \Sign(\sk, m^{\star})$ to the oracle.
+		\begin{equation*}
+			m_2 = \frac{m^{\star}}{m_1},
+			\qquad
+			\sigma_1 = m_1^{d},
+			\qquad
+			\sigma_2 = \left( \frac{m^{\star}}{m_1} \right)^{d},
+			\qquad
+			\sigma^{\star} = \sigma_1 \cdot \sigma_2.
+		\end{equation*}
+\end{enumerate}
+
+If we hash the message before signing it, we get this to work in the \ac{RO} model.
+
+\begin{construction}[\acs{SS} from \acs{TDP} + \acs{RO}] \label{cons:ss-tdp-ro}
+	We have a \ac{TDP} $(\Gen, f, f^{-1})$, with $\X_{\pk}$ being the domain of the \ac{TDP}.
+	We assume a function $H : \{0,1\}^{\star} \to \X_{\pk}$, \ie the message space is $\M_{\pk} = \{0,1\}^{\star}$.
+	\begin{enumerate}
+		\item $\KGen(1^{\lambda}) = (\pk, \sk) \from \Gen(1^{\lambda})$;
+		\item $\Sign(\sk, m) = f^{-1}(\sk, H(m)) = \sigma$;
+		\item $\Vrfy(\pk, (m, \sigma)) = 1 \iff f(\pk, \sigma) = H^(m)$. \qedhere
+	\end{enumerate}
+\end{construction}
+
+\begin{theorem} \label{thm:ss-tdp-ro}
+	The \ac{SS} in \cref{cons:ss-tdp-ro} is \ac{UFCMA} in the \ac{RO} model if $(\Gen, f, f^{-1})$ is a \ac{TDP}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:ss-tdp-ro}]
+	Assume exists $\Adv$ capable of forging, \ie be a \ac{PPT} adversary such that
+	\begin{equation*}
+		\Pr{
+			\UFCMAGame(\lambda) = 1
+		} \ge \frac{1}{\poly(\lambda)}.
+	\end{equation*}
+	We use her to break the \ac{TDP}.
+
+	Without loss of generality, we make the following assumptions on $\Adv$:
+	\begin{enumerate}
+		\item $\Adv$ never repeats her queries;
+		\item before making signature query $m_i$, $\Adv$ asks $m_i$ to the \ac{RO}.
+	\end{enumerate}
+	We describe $\B$ which is given $\pk$ and $y = f(\pk, x)$ for $x \rand{\X_{\pk}}$, \ie $\B(1^{\lambda}, \pk, y)$:
+	\begin{enumerate}
+		\item run $\Adv(1^{\lambda}, \pk)$, pick $j \rand{[q_h]}$ (number of queries of $\Adv$).
+			With probability $\approx \frac{1}{q_h}$ (one over polynomial) we guess $j$, the last message;
+		\item upon query $m_i \in [0,1]$
+			\begin{enumerate}
+				\item if $i \neq j$, sample $x_0 \rand{\X_{\pk}}$, and let $y_i = f(\pk, x_i)$ and return $y_i$;
+				\item if $i = j$, return $y$ to $\Adv$;
+			\end{enumerate}
+		\item upon seeing query $m_i$, return $x_i$ as long as $m_i \neq m$, else abort;
+		\item when $\Adv$ gives $(m^{\star}, \sigma^{\star})$, output $\sigma^{\star}$.
+	\end{enumerate}
+
+	$\B$ perfectly simulates $\pk$, and also signature queries as long as it does not abort.
+	\begin{enumerate}
+		\item $y_i$ are random, since $x_i$ are random and $f(\pk, \cdot)$ is a permutation;
+		\item $\Sign(\sk, m_i) = f^{-1}(\sk, H(m_i)) = f^{-1}(\sk, f(\pk, x_i)) = x_i$.
+	\end{enumerate}
+	Additionally, if $(m^{\star}, \sigma^{\star})$ is valid it means that $\sigma^{\star} = f^{-1}(\sk, H(m^{\star})) = f^{-1}(\sk, y) = x$, and $\B$ inverts the \ac{TDP}.
+
+	The probability of breaking the \ac{TDP} is the probability of not aborting times the probability that $\Adv$ breaks the scheme.
+	\begin{equation*}
+		\Pr{
+			\text{``$\B$ wins''}
+		} = \frac{1}{q_h} \cdot \frac{1}{\poly(\lambda)} \neq \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{proof}
+
+\begin{theorem}
+	\acp{SS} exist $\iff$ \acp{OWF} exist.
+\end{theorem}
+But this is inefficient.
+
+\section{\acl{WSS}}
+
+\ac{CDH} in bilinear groups.
+
+\begin{definition}[Bilinear Group]
+	$\BilinearGroupTuple \from \Bilin(1^{\lambda})$.
+	\begin{enumerate}
+		\item $\BilinearGroup$, $\BilinearGroupBis$ are groups of order $q$ with some efficient operation ``$\cdot$''.
+			$T$ stands for target;
+		\item $g$ is a generator of $\BilinearGroup$;
+		\item $\BilinearMap : \BilinearGroup \times \BilinearGroup \to \BilinearGroupBis$ is a bilinear map, \ie
+			\begin{enumerate}
+				\item bilinearity: $\forall g, h \in \BilinearGroup$, $\forall a, b \in \Integers_q$,
+					\begin{equation*}
+						\BilinearMap(g^a, h^b) = \BilinearMap(g, h)^{ab};
+					\end{equation*}
+				\item non-degeneracy: $\BilinearMap(g,g) \neq 1$ for generator $g$. \qedhere
+			\end{enumerate}
+	\end{enumerate}
+\end{definition}
+
+\begin{observation}
+	They are pairing on elliptic curves and \ac{CDH} is believed to hold in such groups.
+	\ac{DDH} comes easy in $\BilinearGroup$ with a bilinear map.
+\end{observation}
+
+\begin{construction}[\acl{WSS}]
+	Consider $\Pi = (\KeyGen, \Sign, \Vrfy)$, where
+	\begin{itemize}
+		\item $\KeyGen(1^{\lambda})$:
+			$\params = \BilinearGroupTuple \rand{\Bilin(1^{\lambda})}$, $a \rand{\Integers_q}$, $g_1 = g^a$, $g_2, \mu_1, \dots, \mu_k \rand{\BilinearGroup}$;
+			$\pk = (\params, g_1, g_2, \mu_0, \dots, \mu_k)$, $\sk = g_2^a$.
+		\item $\Sign(\sk, m)$:
+			let $m = (m[1], \dots, m[k]) \in \{0,1\}^{k}$,
+			and $\alpha(m) = \alpha_{\mu_0, \dots, \mu_k}(m) = \mu_0 \prod_{i=1}^{k} \mu_i^{m[i]}$.
+			Pick $r \rand{\Integers_q}$, output $\sigma = (g_2^a \cdot \alpha(m)^r, g^r) = (\sigma_1, \sigma_2)$;
+		\item $\Vrfy(\pk, (m, (\sigma_1, \sigma_2)))$:
+			check that $\BilinearMap(g, \sigma_1) = \BilinearMap(\sigma_2, \alpha(m)) \cdot \BilinearMap(g_1, g_2)$.
+	\end{itemize}
+	Correctness:
+	\begin{align*}
+		\BilinearMap(g, \sigma_1) & = \BilinearMap(g, g_2^a \cdot \alpha(m)^r) = \BilinearMap(g, g_2^a) \cdot \BilinearMap(g, \alpha(m)^r) \\
+		& = \BilinearMap(g^a, g_2) \cdot \BilinearMap(g^r, \alpha(m)) = \BilinearMap(g_1, g_2) \cdot \BilinearMap(\sigma_2, \alpha(m)).
+	\end{align*}
+	Security: partitioning argument.
+	$\M = \{0,1\}^k$, and $X$ is some auxiliary information.
+	Given $X$, one can simulate signature on $m \in \M_1^X$ and moreover with high probability all queries will belong to $\M_1^X$.
+	Forgery will be in $\M_2^X$ which will allow to break \ac{CDH}.
+\end{construction}
+
+\begin{theorem} \label{thm:waters-ss-ufcma}
+	Under \ac{CDH}, \ac{WSS} is \ac{UFCMA}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:waters-ss-ufcma}]
+	Let $\Adv$ be a \ac{PPT} adversary capable of breaking \ac{WSS} with probability greater than $\frac{1}{p(\lambda)}$, with $p(\lambda) \in \poly(\lambda)$.
+	Consider the adversary $\B$ given $\params = \BilinearGroupTuple$, $g_1 = g^a$, $g_2 = g^b$, and which wants to compute $g^{ab}$.
+	$\B(\params, g_1, g_2)$:
+	\begin{enumerate}
+		\item set $l = k q_s$, with $q_s$ being the number of queries ($<< q$);
+		\item pick $x_0 \rand{[-kl, 0]}$ and $x_1, \dots, x_k \rand{[0,l]}$ integers, and $y_0, \dots, y_k \rand{\Integers_q}$;
+		\item set $\mu_i = g_2^{x_i} g^{y_i}$ for all $i \in [k]$, and define the functions
+			\begin{align*}
+				\beta(m) & = x_0 + \sum_{i=1}^{k} m[i] x_i, \\
+				\gamma(m) & = y_0 + \sum_{i=1}^{k} m[i] y_i;
+			\end{align*}
+		\item run $\Adv(\params, g_1, g_2, \mu_0, \dots, \mu_k)$;
+		\item upon a query $m \in \{0,1\}^{k}$ from $\Adv$:
+		\begin{itemize}
+			\item if $\beta = \beta(m) = 0 \mod q$, abort;
+			\item else $\gamma = \gamma(m)$, $r \rand{\Integers_q}$, and output
+				\begin{equation*}
+					\sigma = (\sigma_1, \sigma_2) = (g_2^{\beta r} \cdot g^{\gamma r} \cdot g_1^{- \gamma \beta^{-1}}, g^r \cdot g_1^{- \beta^{-1}});
+				\end{equation*}
+		\end{itemize}
+		\item when $\Adv$ outputs $(m^{\star}, (\sigma_1^{\star}, \sigma_2^{\star}))$:
+		\begin{itemize}
+			\item if $\beta(m^{\star}) \neq 0 \mod q$, abort;
+			\item else output
+				\begin{equation*}
+					\frac{\sigma_1^{\star}}{\left(\sigma_2^{\star}\right)^{\gamma(m^{\star})}}.
+				\end{equation*}
+		\end{itemize}
+	\end{enumerate}
+	If $\beta(m) \neq 0$, $\B$ aborts on output, but answers queries.
+	If $\beta(m) = 0$, $\B$ aborts on queries, but outputs result.
+
+	Public key has random distribution as desired: perfect simulation of $\pk$.
+
+	Conditioning on $\B$ not aborting, the following two holds:
+	\begin{enumerate}
+		\item \label{itm:waters-ss-ufcma:not-aborting:distr} signature answers have the right distribution;
+		\item \label{itm:waters-ss-ufcma:not-aborting:cdh} $\B$ breaks \ac{CDH}.
+	\end{enumerate}
+
+	To verify point~\ref{itm:waters-ss-ufcma:not-aborting:distr}:
+	$a = \log_{g}(g_1)$, $b = \log_{g}(g_2)$.
+	A signature $\sigma$ on $m$ is $\sigma = (\sigma_1, \sigma_2) = (g_2^a \cdot \alpha(m)^{\bar{r}}, g^{\bar{r}})$ for random $\bar{r} \rand{\Integers_q}$.
+	Take now $\bar{r} = r - \alpha \beta^{-1}$ and let $\beta = \beta(m)$, $\gamma = \gamma(m)$.
+	\begin{equation*}
+		\alpha(m) = \mu_0 \prod_{i=1}^{k} \mu_i^{m[i]} = g_2^{x_0} g^{y_0} \prod_{i = 1}^{k} (g_2^{x_i} g^{y_i})^{m[i]} = g_2^{\beta} g^{\gamma}.
+	\end{equation*}
+	\begin{align*}
+		\sigma_1 & = g_2^a \cdot \alpha(m)^{\bar{r}} =
+		g_2^a \cdot \alpha(m)^{r - \alpha \beta^{-1}} \\
+		& = \cancel{g_2^a} \cdot g_2^{\beta r} \cdot g^{\gamma r} \cdot \cancel{g_2^{-\alpha}} \cdot g^{-\alpha \gamma \beta^{-1}}
+		= g_2^{\beta r} \cdot g^{\gamma r} \cdot g_1^{- \gamma \beta^{-1}}
+	\end{align*}
+	\begin{equation*}
+		\sigma_2 = g^{\bar{r}} = g^{r} \cdot g^{-\alpha \beta^{-1}} = g^r \cdot g_1^{- \beta^{-1}}
+	\end{equation*}
+	Since $\bar{r} = r - \alpha \beta^{-1}$ is random, we get the same distribution.
+
+	To verify point~\ref{itm:waters-ss-ufcma:not-aborting:cdh}:
+	let $(\sigma_1^{\star}, \sigma_2^{\star})$ be the forgery such that $\beta(m^{\star}) = 0 \mod q$.
+	\begin{equation*}
+		\frac{\BilinearMap(g, \sigma_1^{\star})}{\BilinearMap(\sigma_2^{\star}, \alpha(m^{\star}))} =
+		\BilinearMap(g_1, g_2)
+	\end{equation*}
+	because it's valid.
+	Since $\BilinearMap(g_1, g_2) = \BilinearMap(g, g)^{ab}$ we have
+	\begin{align*}
+		\BilinearMap(g, g)^{ab} & =
+		\frac{
+			\BilinearMap\left(g, \sigma_1^{\star}\right)
+		}{
+			\BilinearMap\left(\sigma_2^{\star}, \alpha(m^{\star})\right)
+		} =
+		\frac{
+			\BilinearMap\left(g, \sigma_1^{\star}\right)
+		}{
+			\BilinearMap(\sigma_2^{\star}, \underbrace{g_1^{\beta(m^{\star})}}_{1} \cdot g^{\gamma(m^{\star})}))
+		}
+		=
+		\frac{
+			\BilinearMap\left(g, \sigma_1^{\star}\right)
+		}{
+			\BilinearMap\left((\sigma_2^{\star})^{\gamma(m^{\star})}, g\right)
+		} \\
+		& \implies
+		\BilinearMap\left(g, g^{ab}\right) =
+		\BilinearMap\left(g, \frac{\sigma_1^{\star}}{(\sigma_2^{\star})^{\gamma(m^{\star})}}\right)
+		\implies
+		g^{ab} = 
+		\frac{\sigma_1^{\star}}{(\sigma_2^{\star})^{\gamma(m^{\star})}}
+	\end{align*}
+
+	Next, we claim that $\B$ aborts with negligible probability.
+
+	To verify it, we see that $\B$ aborts if the following happens:
+	\begin{equation*}
+		E = \beta(m^{\star}) \neq 0
+		\lor
+		(\beta(m^{\star}) = 0 \land \beta(m_1) = 0)
+		\lor
+		\dots
+		\lor
+		(\beta(m^{\star}) = 0 \land \beta(m_{q_s}) = 0).
+	\end{equation*}
+	Since $\abs{\beta(m)} \le k l$ by definition of $\beta(\cdot)$ $\implies$ $\abs{\beta(m)} < q$ $\implies$ we drop the modulus.
+	By the union bound
+	\begin{equation*}
+		\Pr{E} \le \Pr{\beta(m^{\star}) \neq 0} +
+		\sum_{i=1}^{q_s} \Pr{\beta(m^{\star}) = 0 \land \beta(m_i) = 0}.
+	\end{equation*}
+	\begin{itemize}
+		\item Fix $x_1, \dots, x_k$ and $m^{\star}$, there is a single $x_0$ such that $\beta(m^{\star}) = 0$, thus
+			\begin{equation*}
+				\Pr{\beta(m^{\star}) \neq 0} = \frac{kl}{kl+1};
+			\end{equation*}
+		\item fix $i \in [q_s]$, and let $\bar{m} = m_i$.
+			Since $m^{\star} \neq m_i$, $\exists j : m^{\star}[j] \neq \bar{m}[j]$.
+			Assume without loss of generality that $m^{\star}[j] = 1 \land \bar{m}[j] = 0$.
+			Given arbitrary $x_1, \dots, x_{j-1}, x_{j+1}, \dots, x_k$ then
+			\begin{equation*}
+				(\beta(m^{\star}) = \land \beta(\bar{m}) = 0)
+				\iff
+				\begin{pmatrix}
+					x_0 + x_j = - \sum_{i \neq j} x_i m^{\star}[i] \\
+					x_0 = - \sum_{i \neq j} x_i \bar{m}[i]
+				\end{pmatrix}
+			\end{equation*}
+			$\exists !$ solution.
+			\begin{equation*}
+				\Pr{\beta(m^{\star}) = 0 \land \beta(m_i) = 0} = \frac{1}{kl + 1} \cdot \frac{1}{l + 1}.
+			\end{equation*}
+			So the probability of aborting is:
+			\begin{equation*}
+				\Pr{E} \le \frac{kl}{kl + 1} + q_s \cdot \frac{1}{kl+1} \cdot \frac{1}{l+1}
+			\end{equation*}
+			which gives us the probability of not aborting:
+			\begin{align*}
+				\Pr{\bar{E}} 
+					& \ge
+				1 - \frac{kl}{kl+1} - q_s \cdot \frac{1}{kl+1} \cdot \frac{1}{l+1}
+					\\
+					& =
+				\frac{1}{kl+1} \left( \cancel{kl} + 1 - \cancel{kl} - \frac{q_s}{l+1} \right)
+					=
+				\frac{1}{kl+1} \left( 1 - \frac{q_s}{l+1} \right) \tag{$l = k q_s$}
+					\\
+					& =
+				\frac{1}{kl+1} \left( 1 - \frac{l}{(l+1) k} \right)
+					\ge
+				\frac{1}{4 k q_s + 2}
+					=
+				\frac{1}{p'(\lambda)}
+			\end{align*}
+			with $p'(\lambda) \in \poly(\lambda)$.
+
+			Finally, the probability that $\B$ breaks \ac{CDH}:
+			\begin{equation*}
+				\Pr{\B \text{ breaks \acs{CDH}}} = \underbrace{\frac{1}{p(\lambda)}}_{\text{breaks \acs{WSS}}} \cdot \underbrace{\frac{1}{p'(\lambda)}}_{\text{not abort}} \in \poly(\lambda)
+			\end{equation*}
+	\end{itemize}
+\end{proof}
+
+\section{\aclp{IDS}}
+
+An \ac{IDS} is an interactive protocol between a prover $\P$ and a verifier $\V$, both \ac{PPT}.
+
+\begin{definition}[\acl{IDS}]
+	An \ac{IDS} is a tuple $\Pi = (\Gen, \P, \V)$.
+	$\tau$ is the message exchange between $\P$ and $\V$, denoted as $\tau \rand{(\P(\pk,\sk) \toandfrom \V(\pk))}$, with $(\pk, \sk) \rand{\Gen(1^{\lambda})}$.
+	$\mathrm{out}_{\V}(\P(\pk, \sk) \toandfrom \V(\pk))$ is a random variable, and decides if $\P$ knows $\sk$ or not.
+	% add drawing of ID scheme exchange
+
+	Correctness requirement: for all $\lambda \in \NaturalsZ$, for all $(\pk, \sk)$ output by $\Gen(1^{\lambda})$,
+	\begin{equation*}
+		\Pr{ \mathrm{out}_{\V} (\P(\pk, \sk) \toandfrom \V(\pk)) = 1} = 1.
+	\end{equation*}
+	This is called \emph{perfect correctness}.
+\end{definition}
+We also have a security requirement.
+It should be hard to impersonate $\P$ without knowing the secret key.
+This does not capture the fact that one transcript could work always.
+The security requirement is that it should be hard to impersonate $\P$ even after seeing many $\tau$s from honest executions.
+
+\begin{definition}[Passively secure \acs{IDS}]
+	Consider the game $\IDSGame(\lambda)$, with $\Adv = (\Adv_1, \Adv_2)$, defined by:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\Gen(1^{\lambda})}$;
+		\item $s \from \Adv_1^{\Trans(\pk, \sk)}(\pk)$, where $\Trans(\pk, \sk)$ upon empty input outputs $\tau \rand{(\P(\pk, \sk) \toandfrom \V(\pk))}$, and $s$ is some ``state'';
+		\item return $\mathrm{out}_{\V}(\Adv_2(s, \pk) \toandfrom \V(\pk))$.
+	\end{enumerate}
+	$\Pi = (\Gen, \P, \V)$ is passively secure if for all \ac{PPT} $\Adv$
+	\begin{equation*}
+		\Pr{ \IDSGame(\lambda) = 1 } \le \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{definition}
+
+It's natural to build \acp{IDS} using \acp{SS}.
+The idea is to sign random messages from $\V$.
+\begin{enumerate}
+	\item $\V$ samples $m \rand{\M}$, and sends it to $\P$;
+	\item $\P$ computes $\sigma = \Sign(\sk, m)$ and sends it to $\V$;
+	\item $\V$ outputs $\Vrfy(\pk, (m, \sigma))$.
+\end{enumerate}
+
+Active security is when the \ac{IDS} resists to an adversary that replaces $\V$, and thus chooses what to send to $\P$.
+The proposed scheme is both passively secure and actively secure.
+
+Encrypting and decrypting random messages also works as an \ac{IDS}.
+
+\begin{definition}[Canonical \acs{IDS}]
+	In a canonical \ac{IDS} we have that $\P = (\P_1, \P_2)$ and that $\V = (\V_1, \V_2)$.
+	Just three messages are exchanged:
+	\begin{enumerate}
+		\item $\alpha \rand{\P_1(\pk, \sk)}$ is sent to $\V$;
+		\item $\beta \rand{\B_{\lambda, \pk}} = \V_1$, the challenge, is sent to $\P$;
+		\item $\gamma \rand{\P_2(\pk, \sk, \alpha, \beta)}$ is sent to $\V$;
+		\item $\V$ outputs $\V_2(\pk, \alpha, \beta, \gamma) \in \{0,1\}$.
+	\end{enumerate}
+	The verifier is randomised: this is called a (three-move) ``public coins'' verifier.
+	Sometimes $\P_1$ and $\P_2$ share a state, \ie $(\alpha, a) \rand{\P_1(\pk, \sk)}$ and $\gamma \rand{\P_2(\pk, \sk, \alpha, \beta, a)}$.
+
+	From a canonical \ac{IDS} we want non-degeneracy, \ie it's hard to predict the first message of the prover:
+	\begin{equation*}
+		\forall \hat{\alpha} . \Pr{\alpha = \hat{\alpha} : \alpha \rand{\P_1(\pk, \sk)}} \le \negl{\lambda}. \qedhere
+	\end{equation*}
+\end{definition}
+
+We can construct a \ac{SS} using an \ac{IDS}.
+\begin{construction}[Fiat-Shamir Transform] \label{cons:fiat-shamir-transform}
+	Let $\Pi = (\Gen, \P, \V)$ be an \ac{IDS}.
+	Consider the \ac{SS} $\Pi' = (\KGen, \Sign, \Vrfy)$ defined as:
+	\begin{itemize}
+		\item $\KGen(1^{\lambda}) = \Gen(1^{\lambda})$;
+		\item $\Sign(\sk, m)$:
+			\begin{enumerate}
+				\item $\alpha \rand{\P_1(\pk, \sk)}$;
+				\item $\beta = H(\alpha, m)$ with $H : \{0,1\}^{\star} \to \B_{\pk}$;
+				\item $\gamma \rand{\P_2(\pk, \sk, \alpha, \beta)}$;
+				\item $\sigma = (\alpha, \gamma)$;
+			\end{enumerate}
+		\item $\Vrfy(\pk, (m, \sigma))$ computes $\beta = H(\alpha, m)$, then returns $\V_2(\pk, \alpha, \beta, \gamma)$.
+	\end{itemize}
+\end{construction}
+
+\begin{theorem} \label{thm:fiat-shamir-transform}
+	If $\Pi$ is passively secure, $\Pi'$ as defined in \cref{cons:fiat-shamir-transform} is \ac{UFCMA}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:fiat-shamir-transform}]
+	We do a reduction from $\Adv'$ forging in $\Game^{\mathrm{ufcma}}_{\Pi', \Adv'}(\lambda)$ into $\Adv$ winning $\IDSGame(\lambda)$, both \ac{PPT}.
+
+	Assumptions we make: $\Adv'$ does not repeat hash queries, and if $(m^{\star}, \sigma^{\star})$ is the forgery, with $(\sigma^{\star}, \gamma^{\star})$, then $\Adv'$ queried $H(\alpha^{\star}, m^{\star})$ to the \ac{RO}.
+
+	The reduction to $\Adv^{\Trans(\pk, \sk)}(\pk)$ is as follows:
+	\begin{enumerate}
+		\item forward $\pk$ to $\Adv'$.
+			Pick $i^{\star} \rand{q_h}$, where $q_h$ is the number of \ac{RO} queries;
+		\item query $\Trans(\pk, \sk)$ and get $\tau_i = (\alpha_i, \beta_i, \gamma_i)$ for $i \in [q_s]$, with $q_s$ being the number of signature queries;
+		\item upon $(\alpha_j, m_j)$ \ac{RO} query from $\Adv'$:
+			\begin{enumerate}
+				\item if $j = i^{\star}$ send $a_j$ to the verifier $\V$ in $\IDSGame$, receive $\beta^{\star}$ from $\V$ and send $\beta^{\star}$ to $\Adv'$, with $\beta^{\star} \rand{\B_{\pk, \lambda}}$;
+				\item else, return random $\beta_j \rand{\B_{\pk, \lambda}}$
+			\end{enumerate}
+		\item upon $m_i$ signature query from $\Adv'$:
+			\begin{enumerate}
+				\item check if $\alpha_i$ in $\tau_i = (\alpha_i, \beta_i, \gamma_i)$ is such that $(\alpha_i, m_i)$ is already queried to the \ac{RO}.
+					If it is, abort;
+				\item else return $(\alpha_i, \gamma_i)$ and set $H(\alpha_i, m_i) = \beta_i$ in the \ac{RO};
+			\end{enumerate}
+		\item when $\Adv'$ outputs $(m^{\star}, (\alpha^{\star}, \gamma^{\star}))$, forward $\gamma^{\star}$ to the verifier.
+	\end{enumerate}
+
+	If we didn't abort, and $\Adv'$ is successful, and we guessed $i^{\star}$, we have
+	\begin{equation*}
+		\Pr{\text{$\Adv$ wins}} \ge
+		\underbrace{\Pr{\text{$\Adv'$ wins}}}_{\frac{1}{\poly(\lambda)}} \cdot
+		\underbrace{\Pr{\alpha^{\star} = \alpha_{i^{\star}}}}_{\frac{1}{q_h}} \cdot
+		\Pr{\text{not abort}}.
+	\end{equation*}
+
+	Let $E_i$ be the event that we abort in the $i$-th signature query.
+	By the non-degeneracy property of $\Pi$ we have that $\Pr{E_i} \in \negl{\lambda}$, and thus
+	\begin{equation*} 
+		\Pr{\text{abort}} \le \sum_{i=1}^{q_s} \Pr{E_i} \le q_s \cdot \epsilon(\lambda).
+	\end{equation*}
+
+	Thus $\exists \mu \in \negl{\lambda}$ such that
+	\begin{equation*}
+		\Pr{\text{$\Adv$ wins}} \ge \frac{1}{\poly(\lambda)} \cdot (1 - \mu(\lambda)) \cdot \frac{1}{q_s}
+	\end{equation*}
+	which is non negligible.
+\end{proof}
+
+Two properties are sufficient for an \ac{IDS} to have passive security.
+
+\begin{definition}[\acl{HVZK}]
+	An \ac{IDS} is \ac{HVZK} if exists \ac{PPT} simulator $S$ such that
+	\begin{equation*}
+		\left\{
+			\begin{array}{c}
+			(\pk, \sk) \rand{\KGen(1^{\lambda})} : \\
+			(\pk, \sk), \Trans(\pk, \sk)
+			\end{array}
+		\right\}
+		\CompInd
+		\left\{
+			\begin{array}{c}
+			(\pk, \sk) \rand{\KGen(1^{\lambda})} : \\
+			(\pk, \sk), S(\pk)
+			\end{array}
+		\right\}.
+	\end{equation*}
+	\ac{HVZK} says you don't learn anything from a transcript.
+	It's called the simulation paradigm: if a protocol is \ac{HVZK}, then exists a simulator capable of simulating the transcripts.
+\end{definition}
+
+\begin{definition}[\acl{SP}]
+	Consider the game $\Game^{\mathrm{SP}}_{\Pi, \Adv}$, defined as:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\KGen(1^{\lambda})}$;
+		\item $(\alpha, \beta, \gamma, \beta', \gamma') \from \Adv(\pk)$;
+		\item output 1 if $\beta \neq \beta'$ and
+			\begin{equation*}
+				\V_2(\pk, (\alpha, \beta, \gamma)) = \V_2(\pk, (\alpha, \beta', \gamma')) = 1.
+			\end{equation*}
+	\end{enumerate}
+	\ac{SP} is about canonical \ac{IDS}: it's hard to have two transcripts $(\alpha, \beta, \gamma)$ and $(\alpha, \beta', \gamma')$.
+
+	A canonical \ac{IDS} $\Pi$ satisfies special soundness if for all \ac{PPT} $\Adv$ exists a negligible $\epsilon$ such that
+	\begin{equation*}
+		\Pr{\Game^{\mathrm{SP}}_{\Pi, \Adv}(\lambda) = 1} \le \epsilon(\lambda). \qedhere
+	\end{equation*}
+\end{definition}
+
+\begin{theorem} \label{thm:ids-sp-hvzk-passive-security}
+	Let $\Pi$ be a canonical \ac{IDS}, if $\Pi$ satisfies \ac{SP} and \ac{HVZK}, and the size of $\B_{\pk}$ is $\omega(\log(\lambda))$, then $\Pi$ is passively secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:ids-sp-hvzk-passive-security}]
+	We want a reduction from \ac{PS} to \ac{SP}.
+	We do one step first.
+
+	Let $H_0 = \Game^{\mathrm{id}}_{\Pi, \Adv}$, and consider hybrid $H_1$ where the oracle $\Trans(\pk, \sk)$ is replaced by $S(\pk)$.
+	By \ac{HVZK}, $H_0 \CompInd H_1$.
+	Proof of this is left as exercise.
+
+	Second step: we claim that $\Pr{H_1(\lambda) = 1}$ is negligible.
+	Assume we have an adversary for \ac{PS}, we want to break \ac{SP}.
+	Assume $\Adv = (\Adv_1, \Adv_2)$ breaks $H_1$ with probability $\epsilon(\lambda) \ge \frac{1}{\poly(\lambda)}$, and consider $\Adv'$ breaking \ac{SP}:
+	\begin{enumerate}
+		\item recover $\pk$ from $\Game^{\mathrm{SP}}_{\Pi, \Adv'}(\lambda)$;
+		\item run $\Adv_1(\pk)$.
+			Upon input an oracle query from $\Adv_1$, return $(\alpha, \beta, \gamma) \rand{S(\pk)}$.
+			Let $s$ be the output of $\Adv_1(\pk)$;
+		\item run $\Adv_2(\pk, s)$ and receive $\alpha$, reply $\beta \rand{\B_{\pk, \lambda}}$ and obtain $\gamma$;
+		\item rewind $\Adv_2(\pk, s)$ to the point it already sent $\alpha$, get a new $\beta'$ and receive some $\gamma'$;
+		\item output $(\alpha, \beta, \gamma, \beta', \gamma')$.
+	\end{enumerate}
+	Denote by $z$ the state of $\Adv_2$ after it sent $\alpha$, and call $p_z = \Pr{Z = z}$, where $Z$ is the \ac{RV} corresponding to the state.
+
+	Write $\delta_z = \Pr{H_1(\lambda) = 1 | Z = z}$.
+	By definition,
+	\begin{equation*}
+		\epsilon(\lambda) = \sum_{z \in Z} p_z \delta_z = E[\delta_z].
+	\end{equation*}
+	Let ``Good'' be the event $\beta \neq \beta'$.
+	Then
+	\begin{align*}
+		\Pr{\Game^{\mathrm{SP}}_{\Pi, \Adv'}(\lambda) = 1}
+		& =
+		\Pr{\Game^{\mathrm{SP}}_{\Pi, \Adv'}(\lambda) = 1 \land \text{Good}}
+		\\
+		& \ge
+		\Pr{\Game^{\mathrm{SP}}_{\Pi, \Adv'}(\lambda) = 1 | \text{Good}} - \underbrace{\Pr{\neg \text{Good}}}_{\Pr{\beta = \beta'}}
+		\\
+		& =
+		\Pr{\Game^{\mathrm{SP}}_{\Pi, \Adv'}(\lambda) = 1 | \text{Good}} - \abs{\B_{\pk, \lambda}}^{-1}
+		\\
+		& =
+		\sum_{z \in Z} p_z \delta_z^2 - \abs{\B_{\pk, \lambda}}^{-1}
+		=
+		E(\delta_z^2) - \abs{\B_{\pk, \lambda}}^{-1}
+		\\
+		& \ge
+		\left( E(\delta_z) \right)^2 - \abs{\B_{\pk, \lambda}}^{-1}
+		=
+		\underbrace{\epsilon(\lambda)^2}_{\text{non negligible}} - \underbrace{\abs{\B_{\pk, \lambda}}^{-1}}_{\text{negligible}}
+		\\
+		& \ge
+		\frac{1}{\poly(\lambda)} - \negl{\lambda} \approx \frac{1}{\poly(\lambda)}.
+	\end{align*}
+	So we break \ac{SP} with non negligible probability.
+\end{proof}
+
+\begin{construction}[Schnorr Protocol]
+	Schnorr protocol is defined as follows:
+	\begin{itemize}
+		\item $\KGen(1^{\lambda})$: $\GroupGen$, $\sk = x \rand{\Integers_q}$, $\pk = y = g^x$;
+		\item $\P$ samples $a \rand{\Integers_q}$ and computes $\alpha = g^a$, and sends $\alpha$ to $\V$;
+		\item $\V$ samples $\beta \rand{\Integers_q} = \B_{\pk, \lambda}$, and sends $\beta$ to $\P$;
+		\item $\P$ computes $\gamma = \beta x + a \mod q$, and sends $\gamma$ to $\V$;
+		\item $\V$ checks that $g^{\gamma} \cdot y^{- \beta} = \alpha$.
+	\end{itemize}
+	Completeness:
+	\begin{equation*}
+		g^{\gamma} \cdot y^{-\beta}
+		=
+		g^{\beta x + a} \cdot g^{-\beta x}
+		=
+		g^{\cancel{\beta x} - \cancel{\beta x} + a}
+		=
+		g^a.
+	\end{equation*}
+	Schnorr protocol has a simulator:
+	pick $\beta, \gamma$ at random, let $\alpha = g^{\gamma} \cdot y^{-\beta}$, and output $(\alpha, \beta, \gamma)$.
+	In a real execution, $\gamma = \beta x + a$ is uniform regardless of $\beta$, and $\alpha$ is the unique value such that $\alpha = g^{\gamma} \cdot y^{-\beta}$.
+\end{construction}
+
+\ac{SP} holds under \ac{DL} assumption.
+Assume $\Adv$ breaks \ac{SP} with non negligible probability.
+$\Adv'$ gets $y = g^x$ for random $x \rand{\Integers_q}$, and sets $\pk = y$ in a game with $\Adv$.
+$\Adv$ outputs $(\alpha, \beta, \gamma, \beta', \gamma')$, with $\beta \neq \beta'$ and $g^{\gamma} \cdot y^{-\beta} = \alpha = g^{\gamma'} \cdot y^{-\beta'}$.
+We get that
+\begin{align*}
+	g^{\gamma} y^{-\beta} = g^{\gamma'} y_{-\beta'}
+	\implies
+	g^{\gamma - \gamma'} = y^{\beta - \beta'}
+	\implies
+	y = g^{(\gamma - \gamma')(\beta - \beta')^{-1}}
+\end{align*}
+so $x = (\gamma - \gamma')(\beta - \beta')^{-1}$.
+
+
+
+
+
+
+
+

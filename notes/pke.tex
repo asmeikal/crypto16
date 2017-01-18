@@ -1,0 +1,712 @@
+
+\chapter{\acl{PKE}}
+
+% add drawing of PKE
+
+There's also a thing called \emph{Hybrid Encryption}: encrypt key $k$ with $\pk$, then use $k$ for something like \ac{AES}.
+
+\begin{definition}[\acl{PKE} Scheme]
+	A \ac{PKE} scheme is a tuple $\PKESchemeTuple$, where
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $\PKEEnc(\pk, m) = c$;
+		\item $\PKEDec(\sk, c) = m$. \qedhere
+	\end{enumerate}
+\end{definition}
+We require correctness from a \ac{PKE} scheme:
+\begin{equation*}
+	\Pr{
+		\PKEDec(\sk, \PKEEnc(\pk, m)) = m : (\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}
+	}
+	= 1 - \negl{\lambda}.
+\end{equation*}
+
+Now we define games for \ac{CPA}, \ac{CCA}1, \ac{CCA}2 for \ac{PKE}.
+
+\begin{definition}[\acs{CPA} for \acs{PKE}]
+	$\PKEGameCPA(\lambda, b)$:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $(m_0, m_1) \from \Adv(1^{\lambda}, \pk)$;
+		\item $c \from \PKEEnc(\pk, m_b)$;
+		\item $b' \from \Adv(\pk, c)$. \qedhere
+	\end{enumerate}
+\end{definition}
+
+\begin{definition}[\acs{CCA}-1 for \acs{PKE}]
+	$\PKEGameCCA{1}(\lambda, b)$:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $(m_0, m_1) \from \Adv^{\PKEDec(\sk, \cdot)}(1^{\lambda}, \pk)$;
+		\item $c \from \PKEEnc(\pk, m_b)$;
+		\item $b' \from \Adv(\pk, c)$. \qedhere
+	\end{enumerate}
+\end{definition}
+
+\begin{definition}[\acs{CCA}-2 for \acs{PKE}]
+	$\PKEGameCCA{2}(\lambda, b)$:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\PKEKeyGen(1^{\lambda})}$;
+		\item $(m_0, m_1) \from \Adv^{\PKEDec(\sk, \cdot)}(1^{\lambda}, \pk)$;
+		\item $c \from \PKEEnc(\pk, m_b)$;
+		\item $b' \from \Adv^{\PKEDec^{\star}(\sk, \cdot)}(\pk, c)$, where $\Dec^{\star}(\sk, c')$ outputs 1 if $c' = c$, and $\PKEDec(\sk, c')$ otherwise. \qedhere
+	\end{enumerate}
+\end{definition}
+
+For $r \in \{ \text{CPA, CCA1, CCA2} \}$ we say that $\Pi$ is SUCCESS if $\forall$ \ac{PPT} $\Adv$
+\begin{equation*}
+	\Game^{r}_{\Pi, \Adv} (\lambda, 0) \CompInd \Game^{r}_{\Pi, \Adv} (\lambda, 1).
+\end{equation*}
+
+In \ac{CCA}-1 no decryption queries can be made after receiving the cyphertext, while in \ac{CCA}-2 decryption queries can be made for cyphertexts different from the challenge cyphertext.
+\begin{equation*}
+	\text{CCA-2} \implies \text{CCA-1} \implies \text{CPA}.
+\end{equation*}
+The other way around is not true in general.
+
+\subsection{ElGamal \acs{PKE}}
+
+\begin{construction}[ElGamal] \label{cons:elgamal}
+	Consider $\Pi = (\KGen, \Enc, \Dec)$, where:
+	\begin{itemize}
+		\item $\KGen(1^{\lambda})$: $\GroupGen$, $x \rand{\Integers_q}$, $h = g^x$, $\pk = g$, $\sk = x$.
+			Public keys $= \left< \Group, q, g, h \right>$;
+		\item $\Enc(\pk, m, r)$: $r \rand{\Integers_q}$, $c = (c_1, c_2) = (g^r, h^r \cdot m)$;
+		\item $\Dec(\sk, (c_1, c_2)) = \frac{c_2}{c_1^x}$.
+	\end{itemize}
+	Note that
+	\begin{equation*}
+		\frac{c_2}{c_1^x} = \frac{h^r \cdot m}{\left( g^r \right)^x} = m. \qedhere
+	\end{equation*}
+\end{construction}
+
+\begin{theorem} \label{thm:elgamal-cpa}
+	Under \ac{DDH}, ElGamal (\cref{cons:elgamal}) is \ac{CPA}-secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:elgamal-cpa}]
+	Let $H_0(\lambda, b) = \Game_{\Pi,\Adv}^{\text{CPA}}(\lambda, b)$.
+	Then, let
+	\begin{equation*}
+		H_1(\lambda, b) :
+		\mathrm{ElGamal} \left(
+			\begin{array}{c}
+				r,z \rand{\Integers_q}; \; c = (g^r, g^z \cdot m_b); \\
+				b' \from \Adv(h, (c_1, c_2))
+			\end{array}
+		\right)
+	\end{equation*}
+	\ie we multiply the message for $g^z$ for random $z$.
+
+	First we claim that $\forall b \in \{0,1\}$, $H_0(\lambda, b) \CompInd H_1(\lambda, b)$.
+	To verify it, note that $(g^x, g^r, g^{xr}) \CompInd (g^x, g^y, g^z)$ by \ac{DDH}.
+	Assume $\Adv_{H_0, H_1}$ distinguishes the two, then $\Adv_{\text{DDH}}$, on input $(g^x, g^r, g^z)$, with $z$ either random or equal to $x \cdot r$, can forward $h = g^x$ to $\Adv_{H_0,H_1}$, receives the two messages $m_0$ and $m_1$, and return her $(g^r, g^z \cdot m_0)$, and output whatever $\Adv_{H_0,H_1}$ outputs.
+	% add drawing
+
+	The second claim is that $H_1(\lambda, 0) \CompInd H_1(\lambda, 1)$.
+	Since $g^z$ is random, so $g^z \cdot m_b$ is random, and hides $b$.
+\end{proof}
+
+A few properties of ElGamal:
+\begin{enumerate}
+	\item \label{itm:elgamal-homomorphic} homomorphic: given $\pk, (c_1, c_2), (c_1', c_2')$, with $(c_1,c_2) = \Enc(\pk, m)$ and $(c_1', c_2') = \Enc(\pk, m')$, note that
+		\begin{equation*}
+			(c_1 \cdot c_1', c_2 \cdot c_2') = (g^{r+r'}, h^{r+r'} (m \cdot m')) = \Enc(\pk, m \cdot m', r + r');
+		\end{equation*}
+	\item \label{itm:elgamal-blindness} blindness: given $c = (c_1, c_2) = (g^r, h^r \cdot m)$, compute $m' \cdot c_2 = h^r (m \cdot m')$.
+		You have that $(c_1, m' \cdot c_2) = \Enc(\pk, m \cdot m', r)$;
+	\item re-randomisability: given a cyphertext $c = (c_1, c_2)$ you can always re-randomise it.
+		Take $r' \rand{\Integers_q}$, and compute
+		\begin{equation*}
+			(g^{r'} \cdot c_1, h^{r'} \cdot c_2) = \Enc(\pk, m, r + r').
+		\end{equation*}
+\end{enumerate}
+Property~\ref{itm:elgamal-blindness} implies that ElGamal is not \ac{CCA}-2 secure: take $(c_1, c_2)$ challenge, ask for $\Dec(\sk, (c_1, c_2 \cdot m'))$, and look if the result is $m_0 \cdot m'$ or $m_1 \cdot m'$.
+
+Something cool comes from property~\ref{itm:elgamal-homomorphic}: fully homomorphic encryption.
+You can compute the encryption of the product of two messages.
+
+What if we could do it for every function?
+Assume having $c = \Enc(\pk, m)$, and to have some function $\mathrm{Eval}(\pk, c, f)$ which outputs $c' = \Enc(\pk, f(m))$.
+If you are in a group, it suffices to have addition and multiplication.
+You could build a client/server architecture, where the client $C$ wants to compute $f(x)$ without sharing $x$.
+Then $C$ computes $c = \mathrm{FHECPK}(x)$, sends $c,f$ to the server $S$, and obtains $c' = \mathrm{FHCPK}(f(x))$.
+
+\section{Factoring Assumption and \acs{RSA}}
+
+The factoring assumption will lead us to \ac{RSA}.
+But first, we introduce \acp{TDP}, which can give us \ac{PKE}.
+
+\begin{definition}[\acl{TDP}]
+	A \ac{TDP} is a tuple $(\Gen, f, f^{-1})$, where:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\Gen(1^{\lambda})}$ on some efficiently sampleable domain $\X_{\pk}$;
+		\item $f(\pk, x) = y$ is a permutation over $\X_{\pk}$;
+		\item $f^{-1}(\sk, y) = x$ is the trapdoor.
+	\end{enumerate}
+	A \ac{TDP} has two properties:
+	\begin{enumerate}
+		\item correctness:
+			\begin{equation*}
+				\forall x \in \X_{\pk} . f^{-1}(\sk, f(\pk, x)) = x;
+			\end{equation*}
+		\item one-way: for all \ac{PPT} $\Adv$,
+			\begin{equation*}
+				\Pr{
+					x' = x :
+					\begin{array}{c}
+					(\pk, \sk) \rand{\Gen(1^{\lambda})}; \;
+					x \rand{\X_{\pk}}; \\
+					y = f(\pk, x); \;
+					x' \from \Adv(\pk, y)
+					\end{array}
+				}
+				\le \negl{\lambda}.
+				\qedhere
+			\end{equation*}
+	\end{enumerate}
+\end{definition}
+Basically, we are able to invert $f$ if we have $\sk$.
+Note that $f$ is deterministic!
+We don't get \ac{PKE} directly.
+
+The problem is that randomness is missing.
+Recall hardcore functions.
+\begin{construction}[\acs{PKE} scheme from \acs{TDP}] \label{cons:pke-tdp-hardcore}
+	Take $(\Gen, f, f^{-1})$, and let $h(\cdot)$ be hardcore for $f$.
+	Then do the following:
+	\begin{enumerate}
+		\item $(\pk, \sk) \rand{\Gen(1^{\lambda})}$;
+		\item $\Enc(\pk, m) = (f(\pk, r), h(r) \xor m) = (c_1, c_2)$ for $r \rand{\X_{\pk}}$;
+		\item $\Dec(\sk, (c_1, c_2)) = h(f^{-1}(\sk, c_1)) \xor c_2 = m$.
+	\end{enumerate}
+\end{construction}
+
+\begin{theorem}
+	If $(\Gen, f, f^{-1})$ is a \ac{TDP} and $h(\cdot)$ is hardcore for $f(\cdot)$, then the \ac{PKE} in \cref{cons:pke-tdp-hardcore} is \ac{CPA}-secure.
+\end{theorem}
+
+Since $(f(\pk, r), h(r)) \CompInd  (f(\pk, r), \U)$, this works.
+How many bits can we encrypt?
+
+We know from \cref{thm:gl} that we have at least a bit, for any \ac{TDP}.
+This can be extended to $O(\log(n))$ bits for any \ac{TDP}.
+For specific \acp{TDP} we can get some $\Omega(\lambda)$, like for factoring, \ac{RSA}, \ac{DL}.
+From a \ac{RO} one can get anything in $\{0,1\}^{\star}$.
+
+Let's now look at modular operations modulo $n$ (not necessarily prime).
+For example, take $m = p \cdot q$ with $p,q$ primes.
+
+\begin{theorem}[\acl{CRT}] \label{thm:crt}
+	Let $n_1, \dots, n_k$ be pairwise coprime numbers, and any $a_1, \dots, a_k$ such that $1 \le a_i \le n_i$ for all $i \in [k]$.
+	Then $\exists ! x$ such that $0 \le x < n = \prod_{i=1}^{k} n_i$ and such that $x \equiv a_i \mod n_i$ for all $i \in [k]$.
+\end{theorem}
+
+Special case: when $k = 2$, $n_1 = p$ and $n_2 = q$ are primes, and $n = p \cdot q$.
+Take any $x \in \Integers_n$.
+To $x$ correspond $x_p \equiv x \mod p$ and $x_q \equiv x \mod q$.
+This is a bijection: in fact, $\Integers_n \simeq \Integers_p \times \Integers_q$ (\ie they are isomorphic).
+
+Now, let's look at $f_e(x) = x^e \mod n$, for $0 \le x < n$.
+Recall that $\Integers_n^{\star} = \{ x \in \Integers_n : \gcd(x, n) = 1 \}$, and that $\# \Integers_n^{\star} = (p-1)(q-1) = \varphi(n)$.
+\begin{fact}
+	If $\gcd(e, \varphi(n)) = 1$, then $f_e(\cdot)$ is a permutation over $\Integers_n^{\star}$.
+\end{fact}
+We can indeed invert it.
+Since $\gcd(e, \varphi(n)) = 1$, then $\exists d$ such that $d \cdot e = 1 \mod \varphi(n)$.
+Consider $f_d^{-1}(x) = x^d \mod n$.
+\begin{align*}
+	f_d^{-1} \left( f_e(m) \right)
+	& = {f_e(m)}^d \mod n \\
+	& = \left(m^e\right)^d \mod n \\
+	& = m^{e \cdot d} \mod n.
+\end{align*}
+Since $d \cdot e \equiv 1 \mod \varphi(n)$, then $d \cdot e = t \cdot \varphi(n) + 1$ for some $t$.
+\begin{align*}
+	m^{e \cdot d} =
+	m^{t \varphi(n) + 1} = m \cdot (\underbrace{m^{\varphi(n)}}_{1 \mod n})^t = m \mod n.
+\end{align*}
+
+\paragraph{Assumption} $\RSAtuple$ is a \ac{TDP}.
+\begin{itemize}
+	\item $(n,d,e) \rand{\RSAGen(1^{\lambda})}$ with $n = p \cdot q$ and $e \cdot e \equiv 1 \mod \varphi(n)$.
+		$(n,e) = \pk$, $(n,d) = \sk$;
+	\item $\RSAfun(e,x) = x^e \mod n$;
+	\item $\RSAinv(d,y) = y^d \mod n$.
+\end{itemize}
+We have seen that this is correct.
+The \ac{RSA} assumption is that, for all \ac{PPT} $\Adv$,
+\begin{equation*}
+	\Pr{
+		x = x' :
+		\begin{array}{c}
+		(n,d,e) \rand{\RSAGen(1^{\lambda})}; \;
+		\\
+		x \rand{\Integers_n^{\star}}; \;
+		y = x^e; \;
+		x' \from \Adv(e, n, y)
+		\end{array}
+	}
+	\le \negl{\lambda}.
+\end{equation*}
+
+Under this assumption, we have a 1-bit hardcore predicate, so a 1-bit \ac{PKE}.
+This is a different assumption than factoring.
+If you can factor $n$ you can compute $\varphi(n)$ and thus $d$.
+\ac{RSA} implies factoring, but the other way around is not known.
+
+Textbook \ac{RSA}, \ie using $\RSAtuple$ as is does not work: it's deterministic!
+To do \ac{RSA} encryption in practice pick $r \rand{\{0,1\}^{t}}$ and define $\Enc(e,m) = \left(\hat{m}\right)^{e} \mod n$, where $\hat{m} = r || m$.
+\begin{itemize}
+	\item This is insecure if $t$ is $O(\log(\lambda))$.
+	\item If $m \in \{0,1\}$, this is secure under \ac{RSA}.
+	\item If $t$ is between $\log(\lambda)$ and $\abs{m}$, we don't actually know.
+\end{itemize}
+It's proven to be \ac{CCA}-secure in the \ac{RO} model. 
+
+\begin{construction}[\acs{OAEP} - PKCS\#1 V.2] \label{cons:oaep}
+	\begin{figure}
+		\centering
+		\includegraphics[width=0.8\linewidth]{drawings/oaep.eps}
+		\caption{\acl{OAEP}.}
+		\label{fig:oaep}
+	\end{figure}
+	\ac{OAEP}, shown in \cref{fig:oaep}.
+	This is basically a 2-Feistel $(G,H)$, with $G,H$ hash functions.
+	\begin{itemize}
+		\item $\lambda_0, \lambda_1 \in \NaturalsZ$;
+		\item $m' = m || 0^{\lambda_1}$, $r \rand{\{0,1\}^{\lambda_0}}$;
+		\item $s = m' \xor G(r)$, $t = r \xor H(s)$;
+		\item $\hat{m} = s || t$;
+		\item $\Enc(\pk, m) = \hat{m}^{e}$. \qedhere
+	\end{itemize}
+\end{construction}
+
+\begin{theorem}
+	\ac{OAEP} (\cref{cons:oaep}) is \ac{CCA}-2 secure under \ac{RSA} in the \ac{RO} model.
+\end{theorem}
+
+\section{\acl{TDP} from Factoring}
+
+Let's see how to build a \ac{TDP} from factoring.
+We've seen that $f_e(x) = x^e \mod n$ is a \ac{TDP}.
+What about $e = 2$?
+We have $n = p \cdot q$ and $e \cdot d \equiv 1 \mod n$, but for $e = 2$, $f_2(x) = x^2 \mod n$ is not a permutation, since the image of $f_2(\cdot)$ is $\QR[n] = \{ y : y = x^2 \mod n \text{ for some } x \in \Integers_n^{\star}\}$, and $\QR[n] \subset \Integers_n^{\star}$.
+
+For some $p$ and some $n$, $f_2(\cdot)$ is actually a permutation. 
+By the \ac{CRT} (\cref{thm:crt}), $x \mapsto (x_p, x_q)$ with $x_p \equiv x \mod p$ and $x_q \equiv x \mod q$.
+Let us look at $f(x) = x^2 \mod p$.
+\begin{align*}
+	\Integers_p^{\star} & = \{
+		g^0, g^1, \dots, g^{\left(\frac{p-1}{2}\right) - 1}, g^{\frac{p-1}{2}}, \dots, g^{p-2}
+	\} \\
+	\QR & = \{
+		g^0, g^2, \dots, g^{p-3}, g^0, \dots
+	\}
+\end{align*}
+In $\QR$ are only even powers of the generator.
+This means that $\abs{QR} = \frac{p-1}{2}$.
+Note also that, since $g^{p-1} \equiv g^0 \equiv 1 \mod p$, we have that $g^{\frac{p-1}{2}} \equiv -1 \mod p$.
+There is an easy way to check if a number is a square modulo $p$.
+
+Fix $p, q \equiv 3 \mod 4$, so $p, q \equiv 4 t + 3$ for some $t \in \NaturalsZ$.
+Consider $n = p \cdot q$, also called a Bloom integer.
+If this condition is met, squaring is a \ac{TDP} modulo $n$.
+
+Let $y = x^2 \mod p$, $x = y^{t+1} \mod p$.
+$\left(y^{t+1}\right)^2 = y^{2t+2}$.
+Now, since $p = 4t + 3$,
+\begin{equation*}
+	2t + 2 =
+	\frac{4t + 3 - 3}{2} + 2 =
+	\frac{p-3}{2} + 2 =
+	\frac{p+1}{2} =
+	\frac{p - 1}{2} + 1.
+\end{equation*}
+Now,
+\begin{equation*}
+	y^{2t+2} =
+	y^{\frac{p-1}{2} + 1} =
+	y^{\frac{p-1}{2}} \cdot y =
+	1 \cdot y = y.
+\end{equation*}
+So, $x = \pm y^{t+1} \mod p$.
+Note that $-1 = g^{\frac{p-1}{2}} \not\in \QR$, because $p = 4t + 3 \implies \frac{p-1}{2} = \frac{4t + 2}{2} = 2t+1$, which is odd, and thus $-1$ is not a square.
+
+Now, let's look at $f_{\mathrm{RABIN}}(x) = x^2 \mod n$ (quadratic residue modulo $n$, which is in $\QR$).
+\begin{equation*}
+	x^2 \mapsto (x_p^2, x_q^2).
+\end{equation*}
+Note that $f_{\mathrm{RABIN}}^{-1}(y)$ is one of the following:
+\begin{equation*}
+	\{ (x_p, x_q), (-x_p, x_q), (x_p, -x_q), (-x_p, -x_q) \}.
+\end{equation*}
+But doing this without knowing $p$ and $q$ is not easy.
+One can show that $y \in \QR[n] \iff x^2_p \in \QR[n], x^2_q \in \QR[n]$.
+Then it's easy to see that just one of the above pre-images is a square modulo $n$, and this is because only one between $x_p$ and $-x_p$ is a square (and same goes for $x_q$, $-x_q$).
+\begin{equation*}
+	\abs{\QR[n]} = \frac{\varphi(n)}{4}.
+\end{equation*}
+With $p, q$ you can invert $f_{\mathrm{RABIN}}(x) = x^2 = y \mod n$, without them it's hard as factoring.
+
+\begin{lemma} \label{lem:factor-square}
+	Given $x, z$ such that $x^2 = z^2 = y \mod n$, and $x \neq \pm z$, we can factor $n$.
+\end{lemma}
+
+\begin{proof}[Proof of \cref{lem:factor-square}]
+	Recall that $f^{-1}(y) \in \{ (\pm x_p, \pm x_q) \}$.
+	Thus, if $x = (x_p, x_q)$, then $z \neq (-x_p, -x_q)$, and as such $x+z \in \{ (2x_p, 0), (0, 2x_q)\}$.
+
+	Assume $x+z = (2x_p, 0)$.
+	Then $x+z = 0 \mod q$, but $x+z \neq 0 \mod p$.
+	This means that $\gcd(x+z,n) = q$, \ie $x+z$ is a multiple of $q$, which is a divisor of $n$.
+	After finding $q$, we can find $p = \frac{n}{q}$.
+	Done.
+\end{proof}
+
+\begin{theorem} \label{thm:rabin-bloom-integers}
+	Under factoring over Bloom integers, $f_{\mathrm{RABIN}}$ is a \ac{TDP}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:rabin-bloom-integers}]
+	Assume not, then $\exists \Adv$ and some $p(\lambda) \in \poly(\lambda)$ such that
+	\begin{equation*}
+		\Pr{
+			z^2 = y :
+			\begin{array}{c}
+			(p, q, n) \rand{\Gen(1^{\lambda})}; \;
+			x \rand{\QR[n]}; \; \\
+			y = x^2 \mod n; \;
+			z \from \Adv(y, n)
+			\end{array}
+		}
+		\ge \frac{1}{p(\lambda)}.
+	\end{equation*}
+
+	$x$ is taken from $\QR[n]$ because $f_{\mathrm{RABIN}}$ is a permutation over $\QR[n]$.
+	Consider $\Adv^1(n)$, trying to factor $n$.
+	She chooses $x$, and lets $y = x^2 \mod n$.
+	Then she runs $\Adv(y, n)$ to get $z$.
+	If $z \neq \pm x$, which happens with probability $\frac{1}{2}$, $\Adv^1$ can factor $n$, with probability $\frac{1}{2} \cdot \frac{1}{p(\lambda)}$.
+\end{proof}
+
+\section{\acl{CS} Encryption (1998)}
+
+We will build a simplified version that is \ac{CCA}-1.
+We call it \ac{CS} lite.
+
+\begin{construction}[\acl{CS} lite]
+	Consider $\Pi = (\KGen, \Enc, \Dec)$, where
+	\begin{itemize}
+		\item $\KGen(1^{\lambda})$:
+			$\GroupGen$, then let $g_1 = g$, take $\alpha \rand{\Integers_q}$, and let $g_2 = g_1^{\alpha}$.
+			With high probability $g_2$ is a generator.
+			Now pick $x_1, x_2, y_1, y_2 \rand{\Integers_q}$.
+			Let $h_1 = g_1^{x_1} \cdot g_2^{y_1}$ and $h_2 = g_1^{x_2} \cdot g_2^{y_2}$.
+			Then, $\pk = (h_1, h_2, g_1, g_2)$ and $\sk = (x_1, y_1, x_2, y_2)$;
+		\item $\Enc(\pk, m)$:
+			pick $r \rand{\Integers_q}$, and output
+			\begin{equation*}
+				c = (g_1^r, g_2^r, h_1^r \cdot m, h_2^r) = (c_1, c_2, c_3, c_4).
+			\end{equation*}
+			$c_4 = h_2^r$ serves the purpose to ensure that the message is correct;
+		\item $\Dec(\sk, (c_1, c_2, c_3, c_4))$:
+			if $c_4 \neq c_1^{x_2} \cdot c_2^{y_2}$, return $\bot$;
+			else, return
+			\begin{equation*}
+				\frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}}.
+			\end{equation*}
+	\end{itemize}
+	To verify correctness of the construction:
+	\begin{align*}
+		c_4 & =
+		h_2^r =
+		{(g_1^{x_2} \cdot g_2^{y_2})}^r =
+		{(g_1^r)}^{x_2} \cdot {(g_2^r)}^{y_2} =
+		c_1^{x_2} \cdot c_2^{y_2}, \\
+		c_3 & =
+		h_1^r \cdot m =
+		(g_1^{x_1} \cdot g_2^{y_1})^{r} \cdot m =
+		(g_1^r)^{x_1} \cdot (g_2^r)^{y_1} \cdot m =
+		(c_1)^{x_1} \cdot (c_2)^{y_1} \cdot m.
+	\end{align*}
+\end{construction}
+
+\begin{theorem} \label{thm:cs-lite-cca-1}
+	Under \ac{DDH}, \ac{CS}-lite is \ac{CCA}-1 secure.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:cs-lite-cca-1}]
+	Start with $H_0(\lambda, b) = \PKEGameCCA{1}(\lambda, b)$, where $H_0(\lambda, b)$:
+	\begin{enumerate}
+		\item
+			$\GroupGen$,
+			$x_1, x_2, y_1, y_2 \rand{\Integers_q}$,
+			$g_1 = g$,
+			$g_2 = g_1^{\alpha}$,
+			$h_1 = g_1^{x_1} \cdot g_2^{y_1}$,
+			$h_2 = g_1^{x_2} \cdot g_2^{y_2}$,
+			$\pk = (g_1, g_2, h_1, h_2)$,
+			$\sk = (x_1, y_1, x_2, y_2)$;
+		\item $(m_0^{\star}, m_1^{\star}) \from \Adv^{\Dec(\sk, \cdot)} (1^{\lambda}, \pk)$, where you pick $r \rand{\Integers_q}$, and let
+			\begin{equation*}
+				c^{\star} =
+				(g_1^{r}, g_2^{r}, h_1^{r} \cdot m_b, h_2^{r}) =
+				(c_1^{\star}, c_2^{\star}, c_3^{\star}, c_4^{\star});
+			\end{equation*}
+		\item $b' \from \Adv(\pk, c^{\star})$.
+	\end{enumerate}
+
+	Now consider $H_1(\lambda, b)$, that changes just the way the cyphertext is computed.
+	Pick $r \rand{\Integers_q}$, and let $g_3 = g_1^r$, $g_4 = g_3^{\alpha} = g_2^{r}$.
+	Then
+	\begin{equation*}
+		c^{\star} = \left(g_3, g_4, g_3^{x_1} \cdot g_4^{y_1} \cdot m_b, g_3^{x_2} \cdot g_4^{y_2}\right).
+	\end{equation*}
+	Clearly, $H_0(\lambda, b) \equiv H_1(\lambda, b)$.
+	Just look at $c^{\star}$:
+	\begin{equation*}
+		c^{\star} =
+		(g_1^{r}, g_2^{r}, \underbrace{(g_1^{r})^{x_1} \cdot (g_2^r)^{y_1}}_{h_1^{r}} \cdot m_b, \underbrace{(g_1^{r})^{x_2} \cdot (g_2^{r})^{y_2}}_{h_2^r}).
+	\end{equation*}
+
+	Now, we define $H_2(\lambda, b)$, where instead of using $g_4$ we use $g_1^{r'} = g_2^{r''}$ for some random $r', r''$.
+	The next claim is that $H_1(\lambda, b) \CompInd H_2(\lambda, b)$, by reduction to the \ac{DDH}.
+
+	To finish the proof, we introduce a lemma and two technical claims, that imply the theorem.
+
+	\begin{lemma} \label{lem:cs-lite-cca-1}
+		$b$ is information theoretically hidden in $H_2(\lambda, b)$ for all $\Adv$ asking $t = \poly(\lambda)$ $\Dec$ queries.
+	\end{lemma}
+
+	\begin{proof}[Proof of \cref{lem:cs-lite-cca-1}]
+		Remember that $g_3 = g_1^r$ and that $g_4 = g_2^{r'}$, and that $g_2 = g_1^{\alpha}$.
+		For the proof we assume that $\alpha \neq 0$ and that $r \neq r'$.
+
+		From $h_1 = g_1^{x_1} \cdot g_2^{y_1}$, $\Adv$ knows that
+		\begin{equation} \label{eq:cs-lite-cca-1:x1-y1}
+			\log_{g_1} (h_1) = x_1 + y_1 \log_{g_1} (g_2) = x_1 + \alpha y_1 \mod q.
+		\end{equation}
+		There are $q$ possible pairs $(x_1, y_1)$.
+
+		We say that query $c = (c_1, c_2, c_3, c_4)$ is legal if $c_1 = g_1^{r''}$ and $c_2 = g_2^{r''}$, or equivalently if $\log_{g_1}(c_1) = \log_{g_2}(c_2)$.
+
+		By \cref{clm:cs-lite-cca-1:additional-info} and \cref{clm:cs-lite-cca-1:additional-info}, before getting $c^{\star}$, $\Adv$ knows only that $(x_1, x_2)$ satisfy \cref{eq:cs-lite-cca-1:x1-y1}.
+		\begin{equation*}
+			c^{\star} = (g_3, g_4, g_3^{x_1} \cdot g_4^{y_1} \cdot m_b, g_3^{x_2} \cdot g_4^{y_2}).
+		\end{equation*}
+		We want to show that $g_3^{x_1} \cdot g_4^{y_1}$ is uniform by $\Adv$ point of view.
+		Fix an arbitrary $h$ in $\Group$.
+		If $h = g_3^{x_1} \cdot g_4^{y_1}$, then
+		\begin{equation*}
+			\log_{g_1}(h) = x_1 \log_{g_1} (g_3) + y_1 \log_{g_1}(g_4).
+		\end{equation*}
+		Here $g_3 = g_1^{r}$ and $g_4 = g_2^{r'}$, thus
+		\begin{equation} \label{eq:cs-lite-cca-1:r}
+			\log_{g_1}(h) = x_1 r + \alpha y_1 r'.
+		\end{equation}
+		\Cref{eq:cs-lite-cca-1:x1-y1} and \cref{eq:cs-lite-cca-1:r} are independent: consider the system of equations
+		\begin{equation*}
+			\underbrace{
+			\begin{pmatrix}
+				1 & \alpha \\
+				r & \alpha r'
+			\end{pmatrix}
+			}_{B}
+			\begin{pmatrix}
+				x_1 \\
+				y_1
+			\end{pmatrix}
+			=
+			\begin{pmatrix}
+				\log_{g_1}(h_1) \\
+				\log_{g_1}(h).
+			\end{pmatrix}
+		\end{equation*}
+		$\det(B) = \alpha r' - \alpha r \neq 0$ since $\alpha \neq 0$ and $r \neq r'$.
+
+		Since $h$ is arbitrary,
+		\begin{equation*}
+			\Pr{
+				g_3^{x_1} \cdot g_4^{y_1} = h
+			} = \frac{1}{\abs{\Group}}.
+		\end{equation*}
+		$g_3^{x_1} \cdot g_4^{y_1}$ is uniform, and thus the message is hidden.
+	\end{proof}
+
+	\begin{claim} \label{clm:cs-lite-cca-1:additional-info}
+		$\Adv$ obtains additional info about $x_1, y_1$ only if it ever makes a $\Dec$ query for $c = (c_1, c_2, c_3, c_4)$ such that
+		\begin{itemize}
+			\item $\log_{g_1}(c_1) \neq \log_{g_2}(c_2)$, \ie it's illegal;
+			\item $\Dec(\sk, c) \neq \bot$. \qedhere
+		\end{itemize}
+	\end{claim}
+
+	\begin{proof}[Proof of \cref{clm:cs-lite-cca-1:additional-info}]
+		If $\Dec(\sk, c) = \bot$, then $c_4 \neq c_1^{x_2} \cdot c_2^{y_2}$.
+		You learn nothing about $x_1, y_1$ if you make this query.
+
+		Assume it's not $\bot$, but the query is legal.
+		$\Adv$ learns that
+		\begin{align*}
+			m & = \frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}} \\
+			& \implies \\
+			\log_{g_1}(m)
+			& =
+			\log_{g_1}(c_3) - x_1 \log_{g_1} (c_1) - y_1 \log_{g_1} (c_2) \\
+			& =
+			\log_{g_1}(c_3) - r'' x_1 - r'' y_1 \alpha.
+		\end{align*}
+		Look at the determinant of
+		\begin{equation*}
+			\begin{pmatrix}
+				1 & \alpha \\
+				-r'' & -\alpha r''
+			\end{pmatrix}
+		\end{equation*}
+		which is $- \alpha r'' + \alpha r'' = 0$.
+		This does not tell us anything, so the only way to learn something is a query that is not $\bot$ and that is illegal.
+	\end{proof}
+
+	\begin{claim} \label{clm:cs-lite-cca-1:illegal-query}
+		\begin{equation*}
+			\Pr{
+				\Adv \text{ makes illegal $\Dec$ query $c$ for which $\Dec(c) \neq \bot$}
+			} \le \negl{\lambda}.
+		\end{equation*}
+	\end{claim}
+
+	\begin{proof}[Proof of \cref{clm:cs-lite-cca-1:illegal-query}]
+		Assume $c = (c_1, c_2, c_3, c_4)$ is illegal, \ie
+		\begin{equation*}
+			r_1 = \log_{g_1}(c_1) \neq \log_{g_2}(c_2) = r_2.
+		\end{equation*}
+		For $c$ to be not rejected, we need that $c_4 = c_1^{x_2} \cdot c_2^{y_2}$
+		$\Adv$ knows that
+		\begin{equation} \label{eq:cs-lite-cca-1:x2-y2}
+			\log_{g_1}(h_2) = x_2 + \alpha y_2 \mod q.
+		\end{equation}
+		Fix arbitrary $c_4 \in \Group$.
+		We need that $c_4 = c_1^{x_2} \cdot c_2^{y_2}$.
+
+		$\Adv$ also knows that
+		\begin{equation*}
+			\log_{g_1}(c_4) = x_2 \log_{g_1} (c_1) + y_2 \log_{g_1}(c_2) = x_2 r_1 + y_2 r_2 \alpha.
+		\end{equation*}
+		These, too, are independent, since $\det \left( \begin{smallmatrix}1 & \alpha \\ r_1 & r_2 \alpha\end{smallmatrix} \right) = \alpha (r_2 - r_1) \neq 0$.
+		For the first query, $\Adv$ can guess $c_4$ with probability less than or equal to $\frac{1}{q}$.
+
+		But if the query is rejected, $\Adv$ has excluded one pair.
+		At query $i+1$, $\Adv$ can guess $c_4$ with probability $\frac{1}{q-i}$.
+		The probability that $\exists i$ such that the $(i+1)$-th query is not rejected is less than or equal to
+		\begin{equation*}
+			\sum_{i = 0}^{p-1} \Pr{ \text{$i$-th query is not rejected}} \le \frac{p}{q-p} = \negl{\lambda}
+		\end{equation*}
+		with $\lambda \approx \log(q)$.
+	\end{proof}
+
+	Since \cref{clm:cs-lite-cca-1:additional-info} and \cref{clm:cs-lite-cca-1:illegal-query} imply \cref{lem:cs-lite-cca-1}, and that in turn implies the thesis, we are done.
+\end{proof}
+
+Let's see where the proof breaks for \ac{CCA}-2.
+After having $c^{\star} = (c_1^{\star}, c_2^{\star}, c_3^{\star}, c_4^{\star})$, $\Adv$ knows that
+\begin{equation*}
+	\log_{g_1}(c_4^{\star}) = x_2 \log_{g_1}(g_3) + y_2 \log_{g_1}(g_4).
+\end{equation*}
+This is independent of \cref{eq:cs-lite-cca-1:x2-y2}, and $\Adv$ can recover $x_2, y_2$.
+$\Adv$ constructs
+\begin{equation*}
+	c = \left(g_1^{r_1}, g_2^{r_2}, c_3, {(g_1^{r_1})}^{x_2}, {(g_2^{r_2})}^{y_2} \right).
+\end{equation*}
+$\Adv$ learns $m = \frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}}$, and can recover $x_1, y_1$ and decrypt to find $b$.
+\begin{equation*}
+	\log_{g_1} \left( \frac{c_3}{m} \right) = x_1 r_1 + \alpha y_1 r_2.
+\end{equation*}
+
+\subsection{Real \acl{CS}}
+
+\begin{construction}[\acl{CS}] \label{cons:cs}
+	Consider the \ac{CS} \ac{PKE} scheme $\Pi = (\KGen, \Enc, \Dec)$, where
+	\begin{itemize}
+		\item $\KGen(1^{\lambda})$:
+			\begin{enumerate}
+				\item $\GroupGen$;
+				\item let $g_1 = g$, take $\alpha \rand{\Integers_q}$, and let $g_2 = g_1^{\alpha}$;
+				\item let $\H : \{0,1\}^{\star} \to \Integers_q$ be a \ac{CRH};
+				\item pick $x_1, x_2, y_1, y_2, x_3, y_3 \rand{\Integers_q}$;
+				\item let $h_i = g_1^{x_i} \cdot g_2^{y_i}$, for $i \in \{1,2,3\}$;
+				\item $\pk = (g_1, g_2, h_1, h_2, h_3)$, $\sk = (x_1, x_2, x_3, y_1, y_2, y_3)$;
+			\end{enumerate}
+		\item $\Enc(\pk, m)$:
+			pick $r \rand{\Integers_q}$, and output
+			\begin{equation*}
+				c = \left( g_1^{r}, g_2^{r}, h_1^{r} \cdot m, \left(h_2 \cdot h_3^{\beta}\right)^{r} \right) = (c_1, c_2, c_3, c_4)
+			\end{equation*}
+			where $\beta = \H(c_1, c_2, c_3)$.
+		\item $\Dec(\sk, (c_1, c_2, c_3, c_4))$:
+			check that
+			\begin{equation*}
+				c_1^{x_2 + \beta x_3} \cdot c_2^{y_2 + \beta y_3} = c_4.
+			\end{equation*}
+			If not, output $\bot$.
+			Otherwise, output
+			\begin{equation*}
+				m = \frac{c_3}{c_1^{x_1} \cdot c_2^{y_1}}.
+			\end{equation*}
+	\end{itemize}
+	Correctness:
+	\begin{align*}
+		c_1^{x_2 + \beta x_3} \cdot c_2^{y_2 + \beta y_3}
+		& =
+		\left( g_1^r \right)^{x_2} \cdot
+		\left( g_1^r \right)^{\beta x_3} \cdot
+		\left( g_2^r \right)^{y_2} \cdot
+		\left( g_2^r \right)^{\beta y_3} \\
+		& = 
+		\left( g_1^{x_2} \cdot g_2^{y_2} \right)^{r} \cdot
+		\left( g_1^{x_3} \cdot g_2^{y_3} \right)^{\beta r} \\
+		& = h_2^{r} \cdot h_3^{\beta r}
+		=
+		\left( h_2 \cdot h_3^{\beta} \right)^{r}.
+	\end{align*}
+\end{construction}
+
+The proof of \ac{CCA}-2 security looks much similar to the proof for \ac{CCA}-1 security of \ac{CS} lite (\cref{thm:cs-lite-cca-1}).
+
+\begin{theorem} \label{thm:cs-cca-2}
+	The \ac{CS} \ac{PKE} scheme (\cref{cons:cs}) is \ac{CCA}-2 under \ac{DDH}.
+\end{theorem}
+
+\begin{proof}[Proof of \cref{thm:cs-cca-2}]
+	Start with $(g, g^{\alpha}, g^r, g^{\alpha r})$.
+	\begin{equation*}
+		c^{\star} = \left( g^r, g^{\alpha r}, g^{x_1 \alpha r} \cdot g^{y_1 \alpha r} \cdot m, \left(g^{x_2} \cdot g^{x_3} \cdot g^{\alpha \beta y_2} \cdot g^{\alpha \beta y_3}\right)^{r} \right).
+	\end{equation*}
+	These have the same distribution, so the first tuple is indistinguishable from $(g, g^{\alpha}, g^{r}, g^{\alpha r'})$.
+	The first hybrid uses the \ac{DDH} tuple, the second uses the non-\ac{DDH} tuple.
+
+	From the $\pk$, $\Adv$ knows that
+	\begin{align*}
+		\log_{g_1} (h_2) & = x_2 + \alpha y_2, \\
+		\log_{g_1} (h_3) & = x_3 + \alpha y_3.
+	\end{align*}
+	Let's analyse the probability of rejecting illegal queries.
+	Let $g_3 = g_1^{r}$, and let $g_4 = g_2^{r'}$, with $r \neq r'$.
+	Given $c^{\star}$, $\Adv$ knows that
+	\begin{equation*}
+		\log_{g_1} (c_4^{\star}) =
+		(x_2 + \beta^{\star} x_3) r + (y_2 + \beta^{\star} y_3) \alpha r'.
+	\end{equation*}
+	Take arbitrary $c = (c_1, c_2, c_3, c_4) \neq c^{\star}$, and assume $c$ is illegal, \ie $\log_{g_1}(c_1) \neq \log_{g_2}(c_2)$.
+	Three cases are possible:
+	\begin{enumerate}
+		\item $(c_1, c_2, c_3) = (c_1^{\star}, c_2^{\star}, c_3^{\star})$, but $c_4 \neq c_4^{\star}$.
+			It's impossible, so it's always rejected;
+		\item $(c_1, c_2, c_3) \neq (c_1^{\star}, c_2^{\star}, c_3^{\star})$, but
+			\begin{equation*}
+				\H(c_1, c_2, c_3) = \beta = \beta^{\star} = \H(c_1^{\star}, c_2^{\star}, c_3^{\star}).
+			\end{equation*}
+			It's impossible (highly unlikely) by \ac{CRH};
+		\item as before, $(c_1, c_2, c_3) \neq (c_1^{\star}, c_2^{\star}, c_3^{\star})$ and $\beta \neq \beta^{\star}$. \qedhere
+	\end{enumerate}
+\end{proof}
